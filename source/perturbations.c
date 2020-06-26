@@ -2575,6 +2575,7 @@ int perturb_workspace_init(
     class_define_index(ppw->index_ap_ufa,pba->has_ur,index_ap,1);
     class_define_index(ppw->index_ap_ncdmfa,pba->has_ncdm,index_ap,1);
     class_define_index(ppw->index_ap_tca_idm_dr,pba->has_idm_dr,index_ap,1);
+    class_define_index(ppw->index_ap_tca_ur,pba->has_ur,index_ap,1);
     class_define_index(ppw->index_ap_rsa_idr,pba->has_idr,index_ap,1);
 
   }
@@ -2600,6 +2601,7 @@ int perturb_workspace_init(
 
     if (pba->has_ur == _TRUE_) {
       ppw->approx[ppw->index_ap_ufa]=(int)ufa_off;
+      ppw->approx[ppw->index_ap_tca_ur]=(int)tca_ur_on;
     }
     if (pba->has_ncdm == _TRUE_) {
       ppw->approx[ppw->index_ap_ncdmfa]=(int)ncdmfa_off;
@@ -3530,7 +3532,11 @@ int perturb_find_approximation_switches(
                 (interval_approx[index_switch][ppw->index_ap_ufa]==(int)ufa_on)) {
               fprintf(stdout,"Mode k=%e: will switch on ur fluid approximation at tau=%e\n",k,interval_limit[index_switch]);
             }
+          if ((interval_approx[index_switch-1][ppw->index_ap_tca_ur]==(int)tca_ur_on) &&
+              (interval_approx[index_switch][ppw->index_ap_tca_ur]==(int)tca_ur_off)) {
+            fprintf(stdout,"Mode k=%e: will switch off ur tight-coupling approximation at tau=%e\n",k,interval_limit[index_switch]);
           }
+	}
           if (pba->has_ncdm == _TRUE_) {
             if ((interval_approx[index_switch-1][ppw->index_ap_ncdmfa]==(int)ncdmfa_off) &&
                 (interval_approx[index_switch][ppw->index_ap_ncdmfa]==(int)ncdmfa_on)) {
@@ -3761,6 +3767,8 @@ int perturb_vector_init(
 
       class_define_index(ppv->index_pt_delta_ur,_TRUE_,index_pt,1); /* density of ultra-relativistic neutrinos/relics */
       class_define_index(ppv->index_pt_theta_ur,_TRUE_,index_pt,1); /* velocity of ultra-relativistic neutrinos/relics */
+      
+      if(ppw->approx[ppw->index_ap_tca_ur] == (int)tca_ur_off)
       class_define_index(ppv->index_pt_shear_ur,_TRUE_,index_pt,1); /* shear of ultra-relativistic neutrinos/relics */
 
       if (ppw->approx[ppw->index_ap_ufa] == (int)ufa_off) {
@@ -4081,6 +4089,9 @@ int perturb_vector_init(
                    ppt->error_message,
                    "scalar initial conditions assume ur fluid approximation turned off");
 
+        class_test(ppw->approx[ppw->index_ap_tca_ur] == (int)tca_ur_off,
+                   ppt->error_message,
+                   "scalar initial conditions assume ur tight-coupling approximation turned on");
       }
 
       if (pba->has_ncdm == _TRUE_) {
@@ -4152,6 +4163,11 @@ int perturb_vector_init(
                    "at tau=%g: the dark tight-coupling approximation can be switched off, not on",tau);
       }
 
+      if (pba->has_ur == _TRUE_){
+        class_test((pa_old[ppw->index_ap_tca_ur] == (int)tca_ur_off) && (ppw->approx[ppw->index_ap_tca_ur] == (int)tca_ur_on),
+                   ppt->error_message,
+                   "at tau=%g: the ur tight-coupling approximation can be switched off, not on",tau);
+      }
       /** - ---> (a.2.) some variables (b, cdm, fld, ...) are not affected by
           any approximation. They need to be reconducted whatever
           the approximation switching is. We treat them here. Below
@@ -4266,9 +4282,10 @@ int perturb_vector_init(
 
           ppv->y[ppv->index_pt_theta_ur] =
             ppw->pv->y[ppw->pv->index_pt_theta_ur];
-
-          ppv->y[ppv->index_pt_shear_ur] =
-            ppw->pv->y[ppw->pv->index_pt_shear_ur];
+          
+	  if (ppw->approx[ppw->index_ap_tca_ur] == (int)tca_ur_off)
+            ppv->y[ppv->index_pt_shear_ur] =
+              ppw->pv->y[ppw->pv->index_pt_shear_ur];
 
           if (ppw->approx[ppw->index_ap_ufa] == (int)ufa_off) {
 
@@ -4394,6 +4411,97 @@ int perturb_vector_init(
         }
       }
 
+      if (pba->has_ur == _TRUE_) {
+
+        /* Case of switching off interacting neutrinos (massless) tight coupling approximation */
+
+        if ((pa_old[ppw->index_ap_tca_ur] == (int)tca_ur_on) && (ppw->approx[ppw->index_ap_tca_ur] == (int)tca_ur_off)) {
+
+          if (ppt->perturbations_verbose>2)
+            fprintf(stdout,"Mode k=%e: switch off ur tight-coupling approximation at tau=%e\n",k,tau);
+
+          if (ppw->approx[ppw->index_ap_rsa] == (int)rsa_off) {
+
+            ppv->y[ppv->index_pt_delta_g] =
+              ppw->pv->y[ppw->pv->index_pt_delta_g];
+
+            ppv->y[ppv->index_pt_theta_g] =
+              ppw->pv->y[ppw->pv->index_pt_theta_g];
+          }
+
+          if ((ppw->approx[ppw->index_ap_tca] == (int)tca_off) && (ppw->approx[ppw->index_ap_rsa] == (int)rsa_off)) {
+
+            ppv->y[ppv->index_pt_shear_g] =
+              ppw->pv->y[ppw->pv->index_pt_shear_g];
+
+            ppv->y[ppv->index_pt_l3_g] =
+              ppw->pv->y[ppw->pv->index_pt_l3_g];
+
+            for (l = 4; l <= ppw->pv->l_max_g; l++) {
+
+              ppv->y[ppv->index_pt_delta_g+l] =
+                ppw->pv->y[ppw->pv->index_pt_delta_g+l];
+            }
+
+            ppv->y[ppv->index_pt_pol0_g] =
+              ppw->pv->y[ppw->pv->index_pt_pol0_g];
+
+            ppv->y[ppv->index_pt_pol1_g] =
+              ppw->pv->y[ppw->pv->index_pt_pol1_g];
+
+            ppv->y[ppv->index_pt_pol2_g] =
+              ppw->pv->y[ppw->pv->index_pt_pol2_g];
+
+            ppv->y[ppv->index_pt_pol3_g] =
+              ppw->pv->y[ppw->pv->index_pt_pol3_g];
+
+            for (l = 4; l <= ppw->pv->l_max_pol_g; l++) {
+
+              ppv->y[ppv->index_pt_pol0_g+l] =
+                ppw->pv->y[ppw->pv->index_pt_pol0_g+l];
+            }
+
+          }
+
+          if (pba->has_ur == _TRUE_) {
+
+            if (ppw->approx[ppw->index_ap_rsa] == (int)rsa_off) {
+
+
+              ppv->y[ppv->index_pt_delta_ur] =
+                ppw->pv->y[ppw->pv->index_pt_delta_ur];
+
+              ppv->y[ppv->index_pt_theta_ur] =
+                ppw->pv->y[ppw->pv->index_pt_theta_ur];
+             
+                ppv->y[ppv->index_pt_shear_ur] = 0;
+
+              if (ppw->approx[ppw->index_ap_ufa] == (int)ufa_off) {
+
+                ppv->y[ppv->index_pt_l3_ur] = 0.;
+
+                for (l=4; l <= ppv->l_max_ur; l++)
+                  ppv->y[ppv->index_pt_delta_ur+l] = 0.;
+              }
+            }
+          }
+
+          if (pba->has_ncdm == _TRUE_) {
+            index_pt = 0;
+            for(n_ncdm = 0; n_ncdm < ppv->N_ncdm; n_ncdm++){
+              for(index_q=0; index_q < ppv->q_size_ncdm[n_ncdm]; index_q++){
+                for(l=0; l<=ppv->l_max_ncdm[n_ncdm]; l++){
+                  /* This is correct even when ncdmfa == off, since ppv->l_max_ncdm and
+                     ppv->q_size_ncdm is updated.*/
+                  ppv->y[ppv->index_pt_psi0_ncdm1+index_pt] =
+                    ppw->pv->y[ppw->pv->index_pt_psi0_ncdm1+index_pt];
+                  index_pt++;
+                }
+              }
+            }
+          }
+        }
+      }
       /* -- case of switching on ur fluid
          approximation. Provide correct initial conditions to new set
          of variables */
@@ -4565,9 +4673,10 @@ int perturb_vector_init(
 
               ppv->y[ppv->index_pt_theta_ur] =
                 ppw->pv->y[ppw->pv->index_pt_theta_ur];
-
-              ppv->y[ppv->index_pt_shear_ur] =
-                ppw->pv->y[ppw->pv->index_pt_shear_ur];
+            
+	      if (ppw->approx[ppw->index_ap_tca] == (int)tca_off) 
+                ppv->y[ppv->index_pt_shear_ur] =
+                  ppw->pv->y[ppw->pv->index_pt_shear_ur];
 
               if (ppw->approx[ppw->index_ap_ufa] == (int)ufa_off) {
 
@@ -4677,9 +4786,10 @@ int perturb_vector_init(
 
               ppv->y[ppv->index_pt_theta_ur] =
                 ppw->pv->y[ppw->pv->index_pt_theta_ur];
-
-              ppv->y[ppv->index_pt_shear_ur] =
-                ppw->pv->y[ppw->pv->index_pt_shear_ur];
+             
+              if (ppw->approx[ppw->index_ap_tca_ur] == (int)tca_ur_off)
+                ppv->y[ppv->index_pt_shear_ur] =
+                  ppw->pv->y[ppw->pv->index_pt_shear_ur];
 
               if (ppw->approx[ppw->index_ap_ufa] == (int)ufa_off) {
 
@@ -4776,8 +4886,9 @@ int perturb_vector_init(
               ppv->y[ppv->index_pt_theta_ur] =
                 ppw->pv->y[ppw->pv->index_pt_theta_ur];
 
-              ppv->y[ppv->index_pt_shear_ur] =
-                ppw->pv->y[ppw->pv->index_pt_shear_ur];
+              if (ppw->approx[ppw->index_ap_tca_ur] == (int)tca_ur_off)
+                ppv->y[ppv->index_pt_shear_ur] =
+                  ppw->pv->y[ppw->pv->index_pt_shear_ur];
 
               if (ppw->approx[ppw->index_ap_ufa] == (int)ufa_off) {
 
@@ -5286,7 +5397,8 @@ int perturb_initial_conditions(struct precision * ppr,
         if (pba->Geff > 0)
          fracnu =0;
         /* velocity of ultra-relativistic neutrinos/relics */ //TBC
-        theta_ur = - k*ktau_three/36./(4.*fracnu+15.) * (4.*fracnu+11.+12.*s2_squared-3.*(8.*fracnu*fracnu+50.*fracnu+275.)/20./(2.*fracnu+15.)*tau*om) * ppr->curvature_ini * s2_squared;
+        theta_ur = - k*ktau_three/18.;
+	       //-  k*ktau_three/36./(4.*fracnu+15.) * (4.*fracnu+11.+12.*s2_squared-3.*(8.*fracnu*fracnu+50.*fracnu+275.)/20./(2.*fracnu+15.)*tau*om) * ppr->curvature_ini * s2_squared;
 
         shear_ur = ktau_two/(45.+12.*fracnu) * (3.*s2_squared-1.) * (1.+(4.*fracnu-5.)/4./(2.*fracnu+15.)*tau*om) * ppr->curvature_ini;//TBC /s2_squared; /* shear of ultra-relativistic neutrinos/relics */  //TBC:0
 
@@ -5294,7 +5406,7 @@ int perturb_initial_conditions(struct precision * ppr,
 
         if (pba->has_dr == _TRUE_) delta_dr = delta_ur;
       }
-
+      fracnu= 0;
       /* synchronous metric perturbation eta */
       //eta = ppr->curvature_ini * (1.-ktau_two/12./(15.+4.*fracnu)*(5.+4.*fracnu - (16.*fracnu*fracnu+280.*fracnu+325)/10./(2.*fracnu+15.)*tau*om)) /  s2_squared;
       //eta = ppr->curvature_ini * s2_squared * (1.-ktau_two/12./(15.+4.*fracnu)*(15.*s2_squared-10.+4.*s2_squared*fracnu - (16.*fracnu*fracnu+280.*fracnu+325)/10./(2.*fracnu+15.)*tau*om));
@@ -5555,11 +5667,11 @@ int perturb_initial_conditions(struct precision * ppr,
       ppw->pv->y[ppw->pv->index_pt_delta_ur] = delta_ur;
 
       ppw->pv->y[ppw->pv->index_pt_theta_ur] = theta_ur;
-
-      ppw->pv->y[ppw->pv->index_pt_shear_ur] = shear_ur;
-
-      ppw->pv->y[ppw->pv->index_pt_l3_ur] = l3_ur;
-
+      
+      if (ppw->approx[ppw->index_ap_tca_ur] == (int)tca_ur_off) {
+        ppw->pv->y[ppw->pv->index_pt_shear_ur] = shear_ur;
+        ppw->pv->y[ppw->pv->index_pt_l3_ur] = l3_ur;
+      }
     }
 
     if (pba->has_idr == _TRUE_){
@@ -5981,6 +6093,17 @@ int perturb_approximations(
         else {
           ppw->approx[ppw->index_ap_ufa] = (int)ufa_off;
 	}
+      }
+      
+      // check tight-coupling
+      if ((tau_nu/tau_h < ppr->ur_tight_coupling_trigger_tau_nu_over_tau_h) &&
+          (tau_nu/tau_k < ppr->ur_tight_coupling_trigger_tau_nu_over_tau_k)) {
+        ppw->approx[ppw->index_ap_tca_ur] = (int)tca_ur_on;
+      }
+      else {
+        ppw->approx[ppw->index_ap_tca_ur] = (int)tca_ur_off;
+        if(tau <6)
+          printf("k=%e, tau=%e , gamma_int = %e\n",k, tau,gamma_int); 
       }
     }
     if (pba->has_ncdm == _TRUE_) {
@@ -6575,7 +6698,9 @@ int perturb_total_stress_energy(
 
         delta_ur = y[ppw->pv->index_pt_delta_ur];
         theta_ur = y[ppw->pv->index_pt_theta_ur];
-        shear_ur = y[ppw->pv->index_pt_shear_ur];
+	
+	if (ppw->approx[ppw->index_ap_tca_ur] == (int)tca_ur_off)  
+          shear_ur = y[ppw->pv->index_pt_shear_ur];
 
       }
 
@@ -7879,7 +8004,9 @@ int perturb_print_variables(double tau,
       if (ppw->approx[ppw->index_ap_rsa]==(int)rsa_off) {
         delta_ur = y[ppw->pv->index_pt_delta_ur];
         theta_ur = y[ppw->pv->index_pt_theta_ur];
-        shear_ur = y[ppw->pv->index_pt_shear_ur];
+	
+	if (ppw->approx[ppw->index_ap_tca_ur] == (int)tca_ur_off)  
+          shear_ur = y[ppw->pv->index_pt_shear_ur];
       }
       else {
         delta_ur = ppw->rsa_delta_ur;
@@ -8628,6 +8755,8 @@ int perturb_derivs(double tau,
 
     }
 
+     if (k == 1 && ppw->approx[ppw->index_ap_tca_ur] == (int)tca_ur_on) 
+	printf("k: %lf, tau: %lf, delta: %lf, theta: %lf \n",k, tau, y[pv->index_pt_delta_g],y[pv->index_pt_theta_g] );
     /** - ---> photon temperature higher momenta and photon polarization (depend on tight-coupling approximation) */
 
     if (ppw->approx[ppw->index_ap_rsa] == (int)rsa_off) {
@@ -8945,9 +9074,21 @@ int perturb_derivs(double tau,
     if (pba->has_ur == _TRUE_) {
 
       /** - ----> if radiation streaming approximation is off */
+      
+      if (ppw->approx[ppw->index_ap_tca_ur] == (int)tca_ur_on) { 
+       
+//        if (k == 0.28) 
+//	printf("k: %lf, tau: %lf, delta: %lf, theta: %lf \n",k, tau, y[pv->index_pt_delta_ur],y[pv->index_pt_theta_ur] );
+        /** - -----> ur density */
+        dy[pv->index_pt_delta_ur] =
+          -4./3.*(y[pv->index_pt_theta_ur] + metric_continuity);
 
-      if (ppw->approx[ppw->index_ap_rsa] == (int)rsa_off) {
-
+        /** - -----> ur velocity */
+        dy[pv->index_pt_theta_ur] =
+          k2*(ppt->three_ceff2_ur*y[pv->index_pt_delta_ur]/4.) + metric_euler;
+      }
+ 	
+      else if (ppw->approx[ppw->index_ap_rsa] == (int)rsa_off) {
         /** - -----> ur density */
         dy[pv->index_pt_delta_ur] =
           // standard term

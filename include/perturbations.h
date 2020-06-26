@@ -27,6 +27,7 @@
 //@{
 
 enum tca_flags {tca_on, tca_off};
+enum tca_ur_flags {tca_ur_on, tca_ur_off};
 enum rsa_flags {rsa_off, rsa_on};
 enum tca_idm_dr_flags {tca_idm_dr_on, tca_idm_dr_off};
 enum rsa_idr_flags {rsa_idr_off, rsa_idr_on};
@@ -615,6 +616,7 @@ struct perturb_workspace
   //@{
 
   int index_ap_tca; /**< index for tight-coupling approximation */
+  int index_ap_tca_ur; /**< index for ur tight-coupling approximation */
   int index_ap_rsa; /**< index for radiation streaming approximation */
   int index_ap_tca_idm_dr; /**< index for dark tight-coupling approximation (idm-idr) */
   int index_ap_rsa_idr; /**< index for dark radiation streaming approximation */
