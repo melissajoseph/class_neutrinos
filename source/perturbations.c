@@ -5282,7 +5282,9 @@ int perturb_initial_conditions(struct precision * ppr,
       if ((pba->has_ur == _TRUE_) || (pba->has_ncdm == _TRUE_) || (pba->has_dr == _TRUE_) || (pba->has_idr == _TRUE_)) {
 
         delta_ur = ppw->pv->y[ppw->pv->index_pt_delta_g]; /* density of ultra-relativistic neutrinos/relics */
-
+       //with interactions, no free-streamin neutrinos early on 
+        if (pba->Geff > 0)
+         fracnu =0;
         /* velocity of ultra-relativistic neutrinos/relics */ //TBC
         theta_ur = - k*ktau_three/36./(4.*fracnu+15.) * (4.*fracnu+11.+12.*s2_squared-3.*(8.*fracnu*fracnu+50.*fracnu+275.)/20./(2.*fracnu+15.)*tau*om) * ppr->curvature_ini * s2_squared;
 
@@ -8937,6 +8939,7 @@ int perturb_derivs(double tau,
       }
     }
 
+    double gamma_int = (1./pow(a,4))*pow(pba->T_nu0*pba->T_cmb*_k_B_,5)*pow(pba->Geff/(1e12*_eV_*_eV_),2)*(2.*_PI_/_h_P_)/_c_*_Mpc_over_m_;
     /** - ---> ultra-relativistic neutrino/relics (ur) */
 
     if (pba->has_ur == _TRUE_) {
@@ -8999,6 +9002,13 @@ int perturb_derivs(double tau,
 	   for (l=6; l<pv->l_max_ur; l++){
        	     dy[pv->index_pt_delta_ur+l] += -.48*dtau*y[pv->index_pt_delta_ur+l];
 	   }	 
+/*	
+	   if(gamma_int > 1000*a_prime_over_a && gamma_int > 1000*k ) {
+             for(l=2; l <= pv->l_max_ur; l++)
+                dy[pv->index_pt_delta_ur+l] = 0; 
+	   } 
+*/	
+	
 	 }
 
 	}
@@ -9176,8 +9186,14 @@ int perturb_derivs(double tau,
 	              // printf("k: %i, q: %g, CL: %g\n",k,q,pba->CL_ncdm[k][index_q]);   
 	       }
 	    }
-
-            /** - -----> jump to next momentum bin or species */
+/*
+	   if(gamma_int > 1000*a_prime_over_a && gamma_int > 1000*k) {
+//            printf("TCA ON, a: %g\n",a);
+            for(l=2; l <= pba->l_max_ncdm; l++)
+              dy[idx+l] = 0;
+            } 
+*/
+	    /** - -----> jump to next momentum bin or species */
 
             idx += (pv->l_max_ncdm[n_ncdm]+1);
           }
