@@ -110,6 +110,7 @@ struct background
   double Geff; 
   double T_nu0;
   int l_max_ncdm; 
+  double inu_a_dec;
 
   int * got_coll_files;                      /**< list of flags for each species, set to true if
 					     p-s-d is passed through file */

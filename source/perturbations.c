@@ -8989,7 +8989,7 @@ int perturb_derivs(double tau,
             k*(s_l[l]*y[pv->index_pt_delta_ur+l-1]-(1.+l)*cotKgen*y[pv->index_pt_delta_ur+l]);
 
        
-         if(pba->Geff >0) {
+         if(pba->Geff >0 && a < pba->inu_a_dec) {
 	//RTA approximation from 1706.02123
            dtau =  1./pow(a,4)*pow(pba->T_nu0*pba->T_cmb*_k_B_,5)*
 	  	  pow(pba->Geff/_eV_/_eV_,2)/1e24*2.*_PI_/_h_P_/_c_*_Mpc_over_m_;
@@ -9043,7 +9043,7 @@ int perturb_derivs(double tau,
               -3./tau*y[pv->index_pt_shear_ur]
               +2./3.*(y[pv->index_pt_theta_ur]+metric_ufa_class);
 
-	    if (pba->Geff > 0)
+	    if (pba->Geff > 0 && a < pba->inu_a_dec)
               dy[pv->index_pt_shear_ur] += dtau2*y[pv->index_pt_shear_ur]; 
           }
         }
@@ -9180,7 +9180,7 @@ int perturb_derivs(double tau,
             dy[idx+l] = qk_div_epsilon*y[idx+l-1]-(1.+l)*k*cotKgen*y[idx+l];
            
 	    //collision term for self-interactions 1902.00534
-            if (pba->Geff > 0 ) {
+            if (pba->Geff > 0 && a < pba->inu_a_dec) {
                for (int k = 2; k <= pba->l_max_ncdm; k++) {
 	               dy[idx+k] += -(exp(q)+1.)*factor_int/q*abs(pba->CL_ncdm[k][index_q]*y[idx+k]);
 	              // printf("k: %i, q: %g, CL: %g\n",k,q,pba->CL_ncdm[k][index_q]);   

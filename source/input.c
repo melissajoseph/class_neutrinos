@@ -1105,7 +1105,17 @@ int input_read_parameters(
   //melissa: read paramters for interacting neutrinos
   class_read_double("Geff", pba->Geff);
   class_read_double("Tnu0", pba->T_nu0);
+  class_read_double("inu_a_dec", pba->inu_a_dec);
   
+  class_call(parser_read_double(pfc,"inu_z_dec",&param1,&flag1,errmsg),
+               errmsg,
+               errmsg);
+  if (flag1 == _TRUE_)
+    pba->inu_a_dec = 1./(1.+param1); 
+ 
+  if(pba->inu_a_dec < 1.)
+    printf("nu interaction decoupling, a = %e \n",pba->inu_a_dec); 
+    if (flag1 == _TRUE_)
   /** - non-cold relics (ncdm) */
   class_read_int("N_ncdm",N_ncdm);
   if ((flag1 == _TRUE_) && (N_ncdm > 0)){
@@ -3229,6 +3239,7 @@ int input_default_params(
   pba->ncdm_psd_parameters = NULL;
   pba->ncdm_psd_files = NULL;
   pba->Geff = 0;
+  pba->inu_a_dec = pba->a_today;
   pba->T_nu0 = pow(4/11.,1/3.);
 
   pba->Omega0_scf = 0.; /* Scalar field defaults */
