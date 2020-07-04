@@ -5163,6 +5163,8 @@ int perturb_initial_conditions(struct precision * ppr,
     /* f_nu = Omega_nu(t_i) / Omega_r(t_i) */
     fracnu = rho_nu/rho_r;
 
+    if (pba->Geff > 0)
+      fracnu =0;
     /* f_g = Omega_g(t_i) / Omega_r(t_i) */
     fracg = ppw->pvecback[pba->index_bg_rho_g]/rho_r;
 
@@ -5283,8 +5285,6 @@ int perturb_initial_conditions(struct precision * ppr,
 
         delta_ur = ppw->pv->y[ppw->pv->index_pt_delta_g]; /* density of ultra-relativistic neutrinos/relics */
        //with interactions, no free-streamin neutrinos early on 
-        if (pba->Geff > 0)
-         fracnu =0;
         /* velocity of ultra-relativistic neutrinos/relics */ //TBC
         theta_ur = - k*ktau_three/36./(4.*fracnu+15.) * (4.*fracnu+11.+12.*s2_squared-3.*(8.*fracnu*fracnu+50.*fracnu+275.)/20./(2.*fracnu+15.)*tau*om) * ppr->curvature_ini * s2_squared;
 
