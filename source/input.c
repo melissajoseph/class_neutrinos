@@ -1261,10 +1261,10 @@ int input_read_parameters(
       int lmax; 
       class_read_double("l_max_ncdm",pba->l_max_ncdm);
       lmax = pba->l_max_ncdm; 
-      class_read_list_of_integers_or_default("use_coll_int_files",pba->got_coll_files,_FALSE_,lmax);
       if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
         printf("Reading collision files\n"); 	  
 	  
+      class_read_list_of_integers_or_default("use_coll_int_files",pba->got_coll_files,_TRUE_,lmax);
         for(n=0,fileentries=0; n<=lmax; n++){
           if (pba->got_coll_files[n] == _TRUE_) fileentries++;
       }
