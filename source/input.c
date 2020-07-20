@@ -1103,6 +1103,11 @@ int input_read_parameters(
 
 
   //melissa: read paramters for interacting neutrinos
+  class_call(parser_read_double(pfc,"log10geff",&param1,&flag1,errmsg),
+               errmsg,
+               errmsg);
+  if (flag1 == _TRUE_)
+    pba->Geff = pow(10,param1); 
   class_read_double("Geff", pba->Geff);
   class_read_double("Tnu0", pba->T_nu0);
   class_read_double("inu_a_dec", pba->inu_a_dec);
@@ -1115,7 +1120,6 @@ int input_read_parameters(
  
   if(pba->inu_a_dec < 1.)
     printf("nu interaction decoupling, a = %e \n",pba->inu_a_dec); 
-    if (flag1 == _TRUE_)
   /** - non-cold relics (ncdm) */
   class_read_int("N_ncdm",N_ncdm);
   if ((flag1 == _TRUE_) && (N_ncdm > 0)){
@@ -1251,8 +1255,9 @@ int input_read_parameters(
       //printf("Adding %g to total Omega..\n",pba->Omega0_ncdm[n]);
     }
     //melissa for collision integrals in interacting neutrinos
-    if(pba->Geff>0){ 
-      printf("Geff = %e MeV^-2 \n", pba->Geff);
+    if(pba->Geff>0 ){ 
+      
+      if(input_verbose > 0) printf("Geff = %e MeV^-2 \n", pba->Geff);
  
       class_call(parser_read_string(pfc,"read_coll_int",&string1,&flag1,errmsg),
              errmsg,
@@ -1261,10 +1266,10 @@ int input_read_parameters(
       int lmax; 
       class_read_double("l_max_ncdm",pba->l_max_ncdm);
       lmax = pba->l_max_ncdm; 
-      class_read_list_of_integers_or_default("use_coll_int_files",pba->got_coll_files,_FALSE_,lmax);
       if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
-        printf("Reading collision files\n"); 	  
+        if(input_verbose > 0) printf("Reading collision files\n"); 	  
 	  
+        class_read_list_of_integers_or_default("use_coll_int_files",pba->got_coll_files,_TRUE_,lmax);
         for(n=0,fileentries=0; n<=lmax; n++){
           if (pba->got_coll_files[n] == _TRUE_) fileentries++;
       }
@@ -3239,7 +3244,7 @@ int input_default_params(
   pba->ncdm_psd_parameters = NULL;
   pba->ncdm_psd_files = NULL;
   pba->Geff = 0;
-  pba->inu_a_dec = pba->a_today;
+  pba->inu_a_dec = 1.;
   pba->T_nu0 = pow(4/11.,1/3.);
 
   pba->Omega0_scf = 0.; /* Scalar field defaults */

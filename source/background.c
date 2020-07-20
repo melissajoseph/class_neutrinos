@@ -1710,8 +1710,8 @@ int collision_ncdm_init(
   class_alloc(pba->CL_ncdm, sizeof(double*)*(lmax+1),pba->error_message);
 
   /* Allocate pointers: */
-
-  for(int l=0, filenum=0;l <= lmax; l++){
+  int l; 
+  for(l=0, filenum=0;l <= lmax; l++){
     pbadist.l_ncdm = l;
     pbadist.q = NULL;
     pbadist.tablesize = 0;
