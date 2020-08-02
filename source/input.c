@@ -1111,7 +1111,9 @@ int input_read_parameters(
   class_read_double("Geff", pba->Geff);
   class_read_double("Tnu0", pba->T_nu0);
   class_read_double("inu_a_dec", pba->inu_a_dec);
+  class_read_double("tca_trigger", ppr->tca_trigger);
   
+  if(input_verbose > 0 && pba->Geff > 0 ) printf("Geff = %e MeV^-2 \n", pba->Geff);
   class_call(parser_read_double(pfc,"inu_z_dec",&param1,&flag1,errmsg),
                errmsg,
                errmsg);
@@ -1254,19 +1256,29 @@ int input_read_parameters(
       pba->Omega0_ncdm_tot += pba->Omega0_ncdm[n];
       //printf("Adding %g to total Omega..\n",pba->Omega0_ncdm[n]);
     }
-    //melissa for collision integrals in interacting neutrinos
-    if(pba->Geff>0 ){ 
-      
-      if(input_verbose > 0) printf("Geff = %e MeV^-2 \n", pba->Geff);
- 
-      class_call(parser_read_string(pfc,"read_coll_int",&string1,&flag1,errmsg),
-             errmsg,
-             errmsg);
+    class_call(parser_read_string(pfc,
+                                  "read_coll_files",
+                                  &string1,
+                                  &flag1,
+                                  errmsg),
+               errmsg,
+               errmsg);
 
+    if (flag1 == _TRUE_){
+      if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
+        pba->read_coll_files = _TRUE_;
+      }
+      else {
+        pba->read_coll_files = _FALSE_;
+      } 
+    }
+    //melissa for collision integrals in interacting neutrinos
+    if(pba->Geff>0 && pba->read_coll_files){ 
+      
       int lmax; 
       class_read_double("l_max_ncdm",pba->l_max_ncdm);
       lmax = pba->l_max_ncdm; 
-      if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
+      if (N_ncdm > 0) {
         if(input_verbose > 0) printf("Reading collision files\n"); 	  
 	  
         class_read_list_of_integers_or_default("use_coll_int_files",pba->got_coll_files,_TRUE_,lmax);
@@ -3244,6 +3256,7 @@ int input_default_params(
   pba->ncdm_psd_parameters = NULL;
   pba->ncdm_psd_files = NULL;
   pba->Geff = 0;
+  pba->read_coll_files = _FALSE_;
   pba->inu_a_dec = 1.;
   pba->T_nu0 = pow(4/11.,1/3.);
 

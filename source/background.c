@@ -1718,7 +1718,7 @@ int collision_ncdm_init(
     /*Do we need to read in a file to interpolate the distribution function? */
     if ((pba->got_coll_files!=NULL)&&(pba->got_coll_files[l]==_TRUE_)){
       psdfile = fopen(pba->coll_files+filenum*_ARGUMENT_LENGTH_MAX_,"r");
-      //printf("Opening file %s\n",pba->coll_files+filenum*_ARGUMENT_LENGTH_MAX_); 
+//      printf("Opening file %s\n",pba->coll_files+filenum*_ARGUMENT_LENGTH_MAX_); 
       class_test(psdfile == NULL,pba->error_message,
                  "Could not open file %s!",pba->coll_files+filenum*_ARGUMENT_LENGTH_MAX_);
       // Find size of table:
