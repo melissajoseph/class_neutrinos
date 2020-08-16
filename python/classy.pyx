@@ -1085,6 +1085,9 @@ cdef class Class:
     def Neff(self):
         return self.ba.Neff
 
+    def YHe(self):
+        return self.th.YHe
+    
     def k_eq(self):
         self.compute(["background"])
         return self.ba.a_eq*self.ba.H_eq
