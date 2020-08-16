@@ -109,6 +109,7 @@ struct background
  
   double Geff; 
   double T_nu0;
+  double gamma_n;
   int l_max_ncdm; 
   double inu_a_dec;
   int read_coll_files;

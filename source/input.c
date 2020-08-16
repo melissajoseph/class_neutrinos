@@ -1109,6 +1109,7 @@ int input_read_parameters(
   if (flag1 == _TRUE_)
     pba->Geff = pow(10,param1); 
   class_read_double("Geff", pba->Geff);
+  class_read_double("gamma_n", pba->gamma_n);
   class_read_double("Tnu0", pba->T_nu0);
   class_read_double("inu_a_dec", pba->inu_a_dec);
   class_read_double("tca_trigger", ppr->tca_trigger);
@@ -3256,6 +3257,7 @@ int input_default_params(
   pba->ncdm_psd_parameters = NULL;
   pba->ncdm_psd_files = NULL;
   pba->Geff = 0;
+  pba->gamma_n = 4;
   pba->read_coll_files = _FALSE_;
   pba->inu_a_dec = 1.;
   pba->T_nu0 = pow(4/11.,1/3.);
