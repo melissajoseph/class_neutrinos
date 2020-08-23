@@ -1710,15 +1710,15 @@ int collision_ncdm_init(
   class_alloc(pba->CL_ncdm, sizeof(double*)*(lmax+1),pba->error_message);
 
   /* Allocate pointers: */
-
-  for(int l=0, filenum=0;l <= lmax; l++){
+  int l; 
+  for(l=0, filenum=0;l <= lmax; l++){
     pbadist.l_ncdm = l;
     pbadist.q = NULL;
     pbadist.tablesize = 0;
     /*Do we need to read in a file to interpolate the distribution function? */
     if ((pba->got_coll_files!=NULL)&&(pba->got_coll_files[l]==_TRUE_)){
       psdfile = fopen(pba->coll_files+filenum*_ARGUMENT_LENGTH_MAX_,"r");
-      //printf("Opening file %s\n",pba->coll_files+filenum*_ARGUMENT_LENGTH_MAX_); 
+//      printf("Opening file %s\n",pba->coll_files+filenum*_ARGUMENT_LENGTH_MAX_); 
       class_test(psdfile == NULL,pba->error_message,
                  "Could not open file %s!",pba->coll_files+filenum*_ARGUMENT_LENGTH_MAX_);
       // Find size of table:

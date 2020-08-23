@@ -109,9 +109,10 @@ struct background
  
   double Geff; 
   double T_nu0;
+  double gamma_n;
   int l_max_ncdm; 
   double inu_a_dec;
-
+  int read_coll_files;
   int * got_coll_files;                      /**< list of flags for each species, set to true if
 					     p-s-d is passed through file */
   char * coll_files;                /**< list of filenames for tabulated p-s-d */

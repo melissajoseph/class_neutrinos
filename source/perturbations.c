@@ -3504,11 +3504,11 @@ int perturb_find_approximation_switches(
 
         if (_scalars_) {
 
-          if ((interval_approx[index_switch-1][ppw->index_ap_tca]==(int)tca_on) &&
+/*          if ((interval_approx[index_switch-1][ppw->index_ap_tca]==(int)tca_on) &&
               (interval_approx[index_switch][ppw->index_ap_tca]==(int)tca_off))
             fprintf(stdout,"Mode k=%e: will switch off tight-coupling approximation at tau=%e\n",k,interval_limit[index_switch]);
           //fprintf(stderr,"Mode k=%e: will switch off tight-coupling approximation at tau=%e\n",k,interval_limit[index_switch]);  //TBC
-
+*/
           if ((interval_approx[index_switch-1][ppw->index_ap_rsa]==(int)rsa_off) &&
               (interval_approx[index_switch][ppw->index_ap_rsa]==(int)rsa_on))
             fprintf(stdout,"Mode k=%e: will switch on radiation streaming approximation at tau=%e\n",k,interval_limit[index_switch]);
@@ -5163,7 +5163,7 @@ int perturb_initial_conditions(struct precision * ppr,
     /* f_nu = Omega_nu(t_i) / Omega_r(t_i) */
     fracnu = rho_nu/rho_r;
 
-    if (pba->Geff > 0)
+    if (pba->Geff > 0 && pba->gamma_n >= 1)
       fracnu =0;
     /* f_g = Omega_g(t_i) / Omega_r(t_i) */
     fracg = ppw->pvecback[pba->index_bg_rho_g]/rho_r;
@@ -5282,19 +5282,25 @@ int perturb_initial_conditions(struct precision * ppr,
       /* all relativistic relics: ur, early ncdm, dr */
 
       if ((pba->has_ur == _TRUE_) || (pba->has_ncdm == _TRUE_) || (pba->has_dr == _TRUE_) || (pba->has_idr == _TRUE_)) {
-
         delta_ur = ppw->pv->y[ppw->pv->index_pt_delta_g]; /* density of ultra-relativistic neutrinos/relics */
-       //with interactions, no free-streamin neutrinos early on 
-        /* velocity of ultra-relativistic neutrinos/relics */ //TBC
-        theta_ur = - k*ktau_three/36./(4.*fracnu+15.) * (4.*fracnu+11.+12.*s2_squared-3.*(8.*fracnu*fracnu+50.*fracnu+275.)/20./(2.*fracnu+15.)*tau*om) * ppr->curvature_ini * s2_squared;
+        theta_ur = ppw->pv->y[ppw->pv->index_pt_theta_g];
+        l3_ur = ktau_three*2./7./(12.*fracnu+45.)* ppr->curvature_ini;//TBC
+    double aref = 2.97e-4;
+    double gamma_int = (1./pow(aref,4))*pow(pba->T_nu0*pba->T_cmb*_k_B_,5)*pow(pba->Geff/(1e12*_eV_*_eV_),2)*(2.*_PI_/_h_P_)/_c_*_Mpc_over_m_*pow(aref/a,pba->gamma_n);
+//        printf("gamma_int = % e \n", pow(pba->T_nu0*pba->T_cmb*_k_B_,5)*pow(pba->Geff/(1e12*_eV_*_eV_),2)*(2.*_PI_/_h_P_)/_c_*_Mpc_over_m_);
+	if (pba->Geff > 0 && gamma_int > ppr->tca_trigger*a_prime_over_a && gamma_int > ppr->tca_trigger*k){
+          
+          shear_ur = 4./15.*(k*k*tau/3.+theta_ur)/gamma_int;
+       
+        }
+        
+         else {
 
         shear_ur = ktau_two/(45.+12.*fracnu) * (3.*s2_squared-1.) * (1.+(4.*fracnu-5.)/4./(2.*fracnu+15.)*tau*om) * ppr->curvature_ini;//TBC /s2_squared; /* shear of ultra-relativistic neutrinos/relics */  //TBC:0
 
-        l3_ur = ktau_three*2./7./(12.*fracnu+45.)* ppr->curvature_ini;//TBC
-
         if (pba->has_dr == _TRUE_) delta_dr = delta_ur;
+         }
       }
-
       /* synchronous metric perturbation eta */
       //eta = ppr->curvature_ini * (1.-ktau_two/12./(15.+4.*fracnu)*(5.+4.*fracnu - (16.*fracnu*fracnu+280.*fracnu+325)/10./(2.*fracnu+15.)*tau*om)) /  s2_squared;
       //eta = ppr->curvature_ini * s2_squared * (1.-ktau_two/12./(15.+4.*fracnu)*(15.*s2_squared-10.+4.*s2_squared*fracnu - (16.*fracnu*fracnu+280.*fracnu+325)/10./(2.*fracnu+15.)*tau*om));
@@ -5833,8 +5839,10 @@ int perturb_approximations(
 
   tau_h = 1./(ppw->pvecback[pba->index_bg_H]*ppw->pvecback[pba->index_bg_a]);
 
+  double a = ppw->pvecback[pba->index_bg_a];
   if(pba->Geff >0) {
-    gamma_int = pow(ppw->pvecback[pba->index_bg_a],-4)*pow(pba->T_nu0*pba->T_cmb*_k_B_,5)*pow(pba->Geff/(1e12*_eV_*_eV_),2)*(2.*_PI_/_h_P_)/_c_*_Mpc_over_m_;
+    double aref = 2.97e-4;
+    double gamma_int = (1./pow(aref,4))*pow(pba->T_nu0*pba->T_cmb*_k_B_,5)*pow(pba->Geff/(1e12*_eV_*_eV_),2)*(2.*_PI_/_h_P_)/_c_*_Mpc_over_m_*pow(aref/a,pba->gamma_n);
     tau_nu = 1./gamma_int;
   }
   /** - for scalar modes: */
@@ -5916,6 +5924,7 @@ int perturb_approximations(
 
     /** - --> (c) free-streaming approximations */
 
+   // printf("photon free-streaming tau = %e \n",pth->tau_free_streaming);
     if ((tau/tau_k > ppr->radiation_streaming_trigger_tau_over_tau_k) &&
         (tau > pth->tau_free_streaming) &&
         (ppr->radiation_streaming_approximation != rsa_none)) {
@@ -5956,16 +5965,11 @@ int perturb_approximations(
         }
       }
     }
-
     if (pba->has_ur == _TRUE_) {
       if (pba->Geff > 0){
-        double fac;
-        if (gamma_int > k)
-	  fac = gamma_int;
-        else 
-	  fac = k;  
-        if ((ppr->ur_fluid_approximation != ufa_none) && tau_h  > tau_k && tau > 10*ppr->l_max_ur/fac) {
-//        printf("k %lf, tau: %lf, gamma: %lf\n", k,tau,gamma_int); 
+        if ((ppr->ur_fluid_approximation != ufa_none) && tau/tau_k  > ppr->ur_fluid_trigger_tau_over_tau_k 
+		       	&& tau_h/tau_nu < 1./ppr->l_max_ur) {
+//	  if(tau < 800) printf("tau: %lf\n",tau);
 	  ppw->approx[ppw->index_ap_ufa] = (int)ufa_on;
 	}
         else {
@@ -5985,13 +5989,24 @@ int perturb_approximations(
     }
     if (pba->has_ncdm == _TRUE_) {
 
-      if ((tau/tau_k > ppr->ncdm_fluid_trigger_tau_over_tau_k) &&
-          (ppr->ncdm_fluid_approximation != ncdmfa_none)) {
-
-        ppw->approx[ppw->index_ap_ncdmfa] = (int)ncdmfa_on;
-      }
+      if (pba->Geff > 0){
+        if ((ppr->ncdm_fluid_approximation != ufa_none) && tau/tau_k  > ppr->ncdm_fluid_trigger_tau_over_tau_k 
+			&& tau < 1./ppr->l_max_ncdm/gamma_int) {
+	  ppw->approx[ppw->index_ap_ncdmfa] = (int)ncdmfa_on;
+	}
+        else {
+          ppw->approx[ppw->index_ap_ncdmfa] = (int)ncdmfa_off; 
+	}  
+      } 
       else {
-        ppw->approx[ppw->index_ap_ncdmfa] = (int)ncdmfa_off;
+        if ((tau/tau_k > ppr->ncdm_fluid_trigger_tau_over_tau_k) &&
+           (ppr->ncdm_fluid_approximation != ncdmfa_none)) {
+
+          ppw->approx[ppw->index_ap_ncdmfa] = (int)ncdmfa_on;
+	}
+        else {
+          ppw->approx[ppw->index_ap_ncdmfa] = (int)ncdmfa_off;
+	}
       }
     }
   }
@@ -6375,7 +6390,6 @@ int perturb_einstein(
 
         ppw->rho_plus_p_shear += 4./3.*ppw->pvecback[pba->index_bg_rho_idr]*shear_idr;
       }
-
       /* fourth equation involving total shear */
       ppw->pvecmetric[ppw->index_mt_alpha_prime] =  //TBC
         - 2. * a_prime_over_a * ppw->pvecmetric[ppw->index_mt_alpha]
@@ -6518,7 +6532,8 @@ int perturb_total_stress_energy(
   /** - for scalar modes */
 
   if (_scalars_) {
-
+    double aref = 2.97e-4;
+    double gamma_int = (1./pow(aref,4))*pow(pba->T_nu0*pba->T_cmb*_k_B_,5)*pow(pba->Geff/(1e12*_eV_*_eV_),2)*(2.*_PI_/_h_P_)/_c_*_Mpc_over_m_*pow(aref/a,pba->gamma_n);
     /** - --> (a) deal with approximation schemes */
 
     /** - ---> (a.1.) photons */
@@ -6576,6 +6591,9 @@ int perturb_total_stress_energy(
         delta_ur = y[ppw->pv->index_pt_delta_ur];
         theta_ur = y[ppw->pv->index_pt_theta_ur];
         shear_ur = y[ppw->pv->index_pt_shear_ur];
+        
+        if(gamma_int > ppr->tca_trigger*a_prime_over_a && gamma_int > ppr->tca_trigger*k) 
+          shear_ur = 2./15.*(2.*k2*ppw->pvecmetric[ppw->index_mt_alpha]+ 2.* y[ppw->pv->index_pt_theta_ur])/gamma_int;
 
       }
 
@@ -8372,7 +8390,6 @@ int perturb_derivs(double tau,
   
   /* for interacting neutrinos */
   double dtau; 
-  double factor_int;
   double dtau2;
   /* Non-metric source terms for photons, i.e. \mathcal{P}^{(m)} from arXiv:1305.3261  */
   double P0,P1,P2;
@@ -8938,8 +8955,8 @@ int perturb_derivs(double tau,
         }
       }
     }
-
-    double gamma_int = (1./pow(a,4))*pow(pba->T_nu0*pba->T_cmb*_k_B_,5)*pow(pba->Geff/(1e12*_eV_*_eV_),2)*(2.*_PI_/_h_P_)/_c_*_Mpc_over_m_;
+    double aref = 2.97e-4;
+    double gamma_int = (1./pow(aref,4))*pow(pba->T_nu0*pba->T_cmb*_k_B_,5)*pow(pba->Geff/(1e12*_eV_*_eV_),2)*(2.*_PI_/_h_P_)/_c_*_Mpc_over_m_*pow(aref/a,pba->gamma_n);
     /** - ---> ultra-relativistic neutrino/relics (ur) */
 
     if (pba->has_ur == _TRUE_) {
@@ -8961,7 +8978,13 @@ int perturb_derivs(double tau,
           k2*(ppt->three_ceff2_ur*y[pv->index_pt_delta_ur]/4.-s2_squared*y[pv->index_pt_shear_ur]) + metric_euler
           // non-standard term, non-zero if ceff2_ur not 1/3
           -(1.-ppt->three_ceff2_ur)*a_prime_over_a*y[pv->index_pt_theta_ur];
-
+	
+	if(gamma_int > ppr->tca_trigger*a_prime_over_a && gamma_int > ppr->tca_trigger*k ) {
+	
+        dy[pv->index_pt_theta_ur] =
+          k2*(ppt->three_ceff2_ur*y[pv->index_pt_delta_ur]/4.) + metric_euler;
+	
+	}
         if(ppw->approx[ppw->index_ap_ufa] == (int)ufa_off) {
 
           /** - -----> exact ur shear */
@@ -8991,23 +9014,22 @@ int perturb_derivs(double tau,
        
          if(pba->Geff >0 && a < pba->inu_a_dec) {
 	//RTA approximation from 1706.02123
-           dtau =  1./pow(a,4)*pow(pba->T_nu0*pba->T_cmb*_k_B_,5)*
-	  	  pow(pba->Geff/_eV_/_eV_,2)/1e24*2.*_PI_/_h_P_/_c_*_Mpc_over_m_;
+           dtau =  gamma_int;
 	 
-	   dy[pv->index_pt_shear_ur] += -.4*dtau*y[pv->index_pt_shear_ur]; 
-           dy[pv->index_pt_l3_ur] += -.43*dtau*y[pv->index_pt_l3_ur];
-           dy[pv->index_pt_delta_ur+4] += -.46*dtau*y[pv->index_pt_delta_ur+4];
-           dy[pv->index_pt_delta_ur+5] += -.47*dtau*y[pv->index_pt_delta_ur+5];
+	   dy[pv->index_pt_shear_ur] += -dtau*y[pv->index_pt_shear_ur]; 
+           dy[pv->index_pt_l3_ur] += -dtau*y[pv->index_pt_l3_ur];
+           dy[pv->index_pt_delta_ur+4] += -dtau*y[pv->index_pt_delta_ur+4];
+           dy[pv->index_pt_delta_ur+5] += -dtau*y[pv->index_pt_delta_ur+5];
          
 	   for (l=6; l<pv->l_max_ur; l++){
-       	     dy[pv->index_pt_delta_ur+l] += -.48*dtau*y[pv->index_pt_delta_ur+l];
+       	     dy[pv->index_pt_delta_ur+l] += -dtau*y[pv->index_pt_delta_ur+l];
 	   }	 
-/*	
-	   if(gamma_int > 1000*a_prime_over_a && gamma_int > 1000*k ) {
+	
+	   if(gamma_int > ppr->tca_trigger*a_prime_over_a && gamma_int > ppr->tca_trigger*k ) {
              for(l=2; l <= pv->l_max_ur; l++)
                 dy[pv->index_pt_delta_ur+l] = 0; 
 	   } 
-*/	
+	
 	
 	 }
 
@@ -9038,24 +9060,25 @@ int perturb_derivs(double tau,
           /* a la CLASS */
           if (ppr->ur_fluid_approximation == ufa_CLASS) {
 
-            dtau2 = -0.40/pow(a,4)*pow(pba->T_nu0*pba->T_cmb*_k_B_,5)*pow(pba->Geff/(1e12*_eV_*_eV_),2)*(2.*_PI_/_h_P_)/_c_*_Mpc_over_m_;
-            dy[pv->index_pt_shear_ur] =
+            
+           dy[pv->index_pt_shear_ur] =
               -3./tau*y[pv->index_pt_shear_ur]
               +2./3.*(y[pv->index_pt_theta_ur]+metric_ufa_class);
 
 	    if (pba->Geff > 0 && a < pba->inu_a_dec)
-              dy[pv->index_pt_shear_ur] += dtau2*y[pv->index_pt_shear_ur]; 
+              dy[pv->index_pt_shear_ur] += gamma_int*y[pv->index_pt_shear_ur]; 
+
           }
         }
       }
+
+
+  //if(abs(gamma_int - a_prime_over_a)/gamma_int == 0 && a!= 0) printf("decoupling, a = %e\n ",a);
     }
 
     /** - ---> non-cold dark matter (ncdm): massive neutrinos, WDM, etc. */
     //TBC: curvature in all ncdm
     if (pba->has_ncdm == _TRUE_) {
-
-     if (pba->Geff >0)
-       factor_int = (1./pow(a,4))*pow(pba->T_nu0*pba->T_cmb*_k_B_,5)*pow(pba->Geff/(1e12*_eV_*_eV_),2)*(2.*_PI_/_h_P_)/_c_*_Mpc_over_m_;
 
       idx = pv->index_pt_psi0_ncdm1;
 
@@ -9181,20 +9204,31 @@ int perturb_derivs(double tau,
            
 	    //collision term for self-interactions 1902.00534
             if (pba->Geff > 0 && a < pba->inu_a_dec) {
-               for (int k = 2; k <= pba->l_max_ncdm; k++) {
-	               dy[idx+k] += -(exp(q)+1.)*factor_int/q*abs(pba->CL_ncdm[k][index_q]*y[idx+k]);
-	              // printf("k: %i, q: %g, CL: %g\n",k,q,pba->CL_ncdm[k][index_q]);   
-	       }
-	    }
-/*
-	   if(gamma_int > 1000*a_prime_over_a && gamma_int > 1000*k) {
+            
+	      int ii;
+	    if (pba->read_coll_files) { 
+	      for (ii = 2; ii <= pba->l_max_ncdm; ii++) {
+                dy[idx+ii] += -(exp(q)+1.)*gamma_int/q*pba->CL_ncdm[ii][index_q]*y[idx+ii];
+                  if(pba->CL_ncdm[ii][index_q] < 0)
+                    printf("l: %i, k: %g, q: %g, CL: %g\n",ii,k,q,pba->CL_ncdm[ii][index_q]);
+               } 
+	    } 
+	    else {
+	      dy[idx+2] += -(exp(q)+1.)*gamma_int*q*0.052/(exp(q)-0.5)*y[idx+2];
+              for (ii = 3; ii <= pba->l_max_ncdm; ii++) {
+                dy[idx+ii] += -gamma_int*q*0.0484*y[idx+ii];
+	      }   
+	    }	  
+         //   printf("approx=  %g, interp = %g \n",q*q*0.052/(exp(q)-0.5),pba->CL_ncdm[2][index_q]); 
+
+	   if(gamma_int > ppr->tca_trigger*a_prime_over_a && gamma_int > ppr->tca_trigger*k) {
 //            printf("TCA ON, a: %g\n",a);
             for(l=2; l <= pba->l_max_ncdm; l++)
               dy[idx+l] = 0;
             } 
-*/
-	    /** - -----> jump to next momentum bin or species */
 
+	    /** - -----> jump to next momentum bin or species */
+	    }
             idx += (pv->l_max_ncdm[n_ncdm]+1);
           }
         }
