@@ -1112,8 +1112,12 @@ int input_read_parameters(
   class_read_double("gamma_n", pba->gamma_n);
   class_read_double("Tnu0", pba->T_nu0);
   class_read_double("inu_a_dec", pba->inu_a_dec);
+  class_read_double("inu_a_on", pba->inu_a_on);
+  class_read_double("inu_window_size", pba->inu_window_size);
+  class_read_double("inu_window_mid", pba->inu_window_mid);
   class_read_double("tca_trigger", ppr->tca_trigger);
   
+  if (pba->gamma_n < -2) ppr->tca_trigger = 1000.;
   if(input_verbose > 0 && pba->Geff > 0 ) printf("Geff = %e MeV^-2 \n", pba->Geff);
   class_call(parser_read_double(pfc,"inu_z_dec",&param1,&flag1,errmsg),
                errmsg,
@@ -1121,8 +1125,11 @@ int input_read_parameters(
   if (flag1 == _TRUE_)
     pba->inu_a_dec = 1./(1.+param1); 
  
-  if(pba->inu_a_dec < 1.)
+  if(input_verbose > 0 && (pba->inu_a_on > 0.))
+    printf("nu interaction turn on, a = %e \n",pba->inu_a_on); 
+  if(input_verbose > 0 && pba->inu_a_dec < 1.)
     printf("nu interaction decoupling, a = %e \n",pba->inu_a_dec); 
+
   /** - non-cold relics (ncdm) */
   class_read_int("N_ncdm",N_ncdm);
   if ((flag1 == _TRUE_) && (N_ncdm > 0)){
@@ -3260,6 +3267,9 @@ int input_default_params(
   pba->gamma_n = 4;
   pba->read_coll_files = _FALSE_;
   pba->inu_a_dec = 1.;
+  pba->inu_a_on = 0.;
+  pba->inu_window_mid = -4;
+  pba->inu_window_size = 8;
   pba->T_nu0 = pow(4/11.,1/3.);
 
   pba->Omega0_scf = 0.; /* Scalar field defaults */

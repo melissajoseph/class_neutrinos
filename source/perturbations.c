@@ -9012,7 +9012,7 @@ int perturb_derivs(double tau,
             k*(s_l[l]*y[pv->index_pt_delta_ur+l-1]-(1.+l)*cotKgen*y[pv->index_pt_delta_ur+l]);
 
        
-         if(pba->Geff >0 && a < pba->inu_a_dec) {
+         if(pba->Geff >0 && a < pba->inu_a_dec && a > pba->inu_a_on && a > pow(10.,pba->inu_window_mid - pba->inu_window_size/2.) && a < pow(10.,pba->inu_window_mid + pba->inu_window_size/2.) ) {
 	//RTA approximation from 1706.02123
            dtau =  gamma_int;
 	 
@@ -9065,7 +9065,7 @@ int perturb_derivs(double tau,
               -3./tau*y[pv->index_pt_shear_ur]
               +2./3.*(y[pv->index_pt_theta_ur]+metric_ufa_class);
 
-	    if (pba->Geff > 0 && a < pba->inu_a_dec)
+	    if (pba->Geff > 0 && a < pba->inu_a_dec && a > pba->inu_a_on && a > pow(10.,pba->inu_window_mid - pba->inu_window_size/2.) && pow(10.,a < pba->inu_window_mid + pba->inu_window_size/2.))
               dy[pv->index_pt_shear_ur] += gamma_int*y[pv->index_pt_shear_ur]; 
 
           }
@@ -9203,8 +9203,7 @@ int perturb_derivs(double tau,
             dy[idx+l] = qk_div_epsilon*y[idx+l-1]-(1.+l)*k*cotKgen*y[idx+l];
            
 	    //collision term for self-interactions 1902.00534
-            if (pba->Geff > 0 && a < pba->inu_a_dec) {
-            
+            if (pba->Geff > 0 && a < pba->inu_a_dec && a > pba->inu_a_on && a > pow(10.,pba->inu_window_mid - pba->inu_window_size/2.) && a < pow(10.,pba->inu_window_mid + pba->inu_window_size/2.)) {
 	      int ii;
 	    if (pba->read_coll_files) { 
 	      for (ii = 2; ii <= pba->l_max_ncdm; ii++) {

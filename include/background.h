@@ -112,6 +112,9 @@ struct background
   double gamma_n;
   int l_max_ncdm; 
   double inu_a_dec;
+  double inu_a_on;
+  double inu_window_mid;
+  double inu_window_size;
   int read_coll_files;
   int * got_coll_files;                      /**< list of flags for each species, set to true if
 					     p-s-d is passed through file */
