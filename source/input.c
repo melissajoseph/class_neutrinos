@@ -1290,6 +1290,7 @@ int input_read_parameters(
         if(input_verbose > 0) printf("Reading collision files\n"); 	  
 	  
         class_read_list_of_integers_or_default("use_coll_int_files",pba->got_coll_files,_TRUE_,lmax);
+
         for(n=0,fileentries=0; n<=lmax; n++){
           if (pba->got_coll_files[n] == _TRUE_) fileentries++;
       }
@@ -3266,6 +3267,7 @@ int input_default_params(
   pba->Geff = 0;
   pba->gamma_n = 4;
   pba->read_coll_files = _FALSE_;
+
   pba->inu_a_dec = 1.;
   pba->inu_a_on = 0.;
   pba->inu_window_mid = -4;
