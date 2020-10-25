@@ -444,11 +444,68 @@ int background_functions(
 
   /* interacting dark radiation */
   if (pba->has_idr == _TRUE_) {
-    pvecback[pba->index_bg_rho_idr] = pba->Omega0_idr * pow(pba->H0,2) / pow(a_rel,4);
-    rho_tot += pvecback[pba->index_bg_rho_idr];
-    p_tot += (1./3.) * pvecback[pba->index_bg_rho_idr];
-    rho_r += pvecback[pba->index_bg_rho_idr];
-  }
+    if (pba->N_IR == 0) {
+      pvecback[pba->index_bg_rho_idr] = pba->Omega0_idr * pow(pba->H0,2) / pow(a_rel,4);
+      rho_tot += pvecback[pba->index_bg_rho_idr];
+      p_tot += (1./3.) * pvecback[pba->index_bg_rho_idr];
+      rho_r += pvecback[pba->index_bg_rho_idr];
+    } 
+    else {
+     long double yi, y1,y2,fsi,fs1,fr,fp,fpp,frp,Nfluid,Npressure;
+     long double y1avg, y2avg;  
+     double a_at = a_rel/pba->at;
+     double R3 = pow(pba->R_idr,3); 
+    
+     double yii = pow(1. + 1./20.* pow(a_at,2)*(1. + pow(pba->R_idr/a_at ,2))/(1. +pow(1./a_at,2)), -3);
+     
+     yi = pow(1. + yii *(R3 - 1.), 1./3.);
+     fsi = exp(-yi*a_at)*(1.+yi*a_at+pow(yi*a_at,2)/4. + pow(_PI_/2.,1/2)/8.*pow(yi*a_at,5./2.));  
+     y1 = pow(1. + (R3 - 1.)*fsi,1./3.);
+     y1avg = (2.*y1 + yi)/3.;
+
+     fs1 = exp(-y1avg*a_at)*(1.+ y1avg*a_at+pow(y1avg*a_at,2)/4. + pow(_PI_/2.,1./2.)/8.*pow(y1avg*a_at,5./2.));  
+     y2 = pow(1. + (R3 - 1.)*fs1,1./3.);
+     y2avg = (2.*y2 + y1avg)/3.;  
+     fr = exp(-y2avg*a_at)*(1. + y2avg*a_at + pow(y2avg*a_at,2)/4. + pow(_PI_/2.,1./2.)/6.*pow(y2avg*a_at,5./2.)); 
+     fp = exp(-y2avg*a_at)*(1. + y2avg*a_at + pow(y2avg*a_at,2)/4.);
+     fpp = -1./4.*exp(-y2avg*a_at)*y2avg*a_at*(2. + y2avg*a_at); 
+     frp = -1./24.*exp(-y2avg*a_at)*y2avg*a_at*(12. - 5*(2.*_PI_*y2avg*a_at,1/2) +6.*y2avg*a_at + 2.*(2.*_PI_*y2avg*a_at,1/2)*y2avg*a_at); 
+
+     Nfluid = pba->N_IR/pow(y2avg,4)*(1. + (R3 - 1.)*fr); 
+     Npressure = pba->N_IR/pow(y2avg,4)*(1. + (R3 - 1.)*fp);
+
+     
+     if (pba->use_const_w == 1) {
+       pvecback[pba->index_bg_rho_idr] = Nfluid * (pba->N_UV*7./8.*pow(4./11.,4./3.)*pba->Omega0_g * pow(pba->H0,2)) / pow(a_rel,3.*(1.+pba->w_idr)); 
+       pvecback[pba->index_bg_p_idr] = pba->w_idr *Npressure* (pba->N_UV*7./8.*pow(4./11.,4./3.)*pba->Omega0_g * pow(pba->H0,2)) / pow(a_rel,4);
+       pvecback[pba->index_bg_w_idr] = pvecback[pba->index_bg_p_idr]/pvecback[pba->index_bg_rho_idr]; 
+       pvecback[pba->index_bg_w_idr] = pba->w_idr;
+       pvecback[pba->index_bg_cs2_idr] = pba->cs2_idr;
+     } 
+     else if (pba->rescale_w_cs2 == 1 ){
+    
+       pvecback[pba->index_bg_rho_idr] = Nfluid * (pba->N_UV*7./8.*pow(4./11.,4./3.)*pba->Omega0_g * pow(pba->H0,2)) / pow(a_rel,4.); 
+       pvecback[pba->index_bg_p_idr] = (1./3.) *Npressure* (pba->N_UV*7./8.*pow(4./11.,4./3.)*pba->Omega0_g * pow(pba->H0,2)) / pow(a_rel,4);
+       pvecback[pba->index_bg_w_idr] = pvecback[pba->index_bg_p_idr]/pvecback[pba->index_bg_rho_idr];
+       pvecback[pba->index_bg_w_idr] = pba->rescale_factor_w*(pvecback[pba->index_bg_w_idr] - 1./3.) + 1./3.;  
+       pvecback[pba->index_bg_cs2_idr] = (1./3.)* (1. + (R3 - 1.)*fp - 1./4.*(R3 - 1.)*y2avg*a_at*fpp) / 
+							(1. + (R3 - 1.)*fr - 1./4.*(R3 - 1.)*y2avg*a_at*frp);
+       pvecback[pba->index_bg_cs2_idr] = pba->rescale_factor_cs2*(pvecback[pba->index_bg_cs2_idr] - 1./3.) + 1./3.;
+
+
+     }
+     else {
+       pvecback[pba->index_bg_rho_idr] = Nfluid * (pba->N_UV*7./8.*pow(4./11.,4./3.)*pba->Omega0_g * pow(pba->H0,2)) / pow(a_rel,4); 
+       pvecback[pba->index_bg_p_idr] = (1./3.)* Npressure* (pba->N_UV*7./8.*pow(4./11.,4./3.)*pba->Omega0_g * pow(pba->H0,2)) / pow(a_rel,4); 
+       pvecback[pba->index_bg_w_idr] = pvecback[pba->index_bg_p_idr]/pvecback[pba->index_bg_rho_idr]; 
+       pvecback[pba->index_bg_cs2_idr] = (1./3.)* (1. + (R3 - 1.)*fp - 1./4.*(R3 - 1.)*y2avg*a_at*fpp) / 
+							(1. + (R3 - 1.)*fr - 1./4.*(R3 - 1.)*y2avg*a_at*frp);
+     }
+     p_tot += pvecback[pba->index_bg_p_idr]; 
+     rho_r += pvecback[pba->index_bg_rho_idr];
+     rho_tot += pvecback[pba->index_bg_rho_idr];
+      }
+  } 
 
   /** - compute expansion rate H from Friedmann equation: this is the
       only place where the Friedmann equation is assumed. Remember
@@ -689,7 +746,7 @@ int background_init(
         printf(" -> dark radiation Delta Neff %e\n",N_dark);
       }
 
-      printf(" -> total N_eff = %g (sumed over ultra-relativistic species, ncdm and dark radiation)\n",Neff);
+      printf(" -> total N_eff = %g (summed over ultra-relativistic species, ncdm and dark radiation)\n",Neff);
 
     }
   }
@@ -990,6 +1047,9 @@ int background_indices(
 
   /* - index interacting for dark radiation */
   class_define_index(pba->index_bg_rho_idr,pba->has_idr,index_bg,1);
+  class_define_index(pba->index_bg_p_idr,pba->has_idr,index_bg,1);
+  class_define_index(pba->index_bg_w_idr,pba->has_idr,index_bg,1);
+  class_define_index(pba->index_bg_cs2_idr,pba->has_idr,index_bg,1);
 
   /* - index for interacting dark matter */
   class_define_index(pba->index_bg_rho_idm_dr,pba->has_idm_dr,index_bg,1);
@@ -1685,6 +1745,100 @@ int coll_fcn_ncdm(
 
   return _SUCCESS_;
 }
+
+/*
+int rho_p_inter_init(
+                         struct precision *ppr,
+                         struct background *pba ) {
+
+  int index_x, k,tolexp,row,status,filenum;
+  double f0m2,f0m1,f0,f0p1,f0p2,dq,q,df0dq,tmp1,tmp2;
+  struct parameters_for_coll_ncdm pbadist;
+  FILE *pfile;
+  FILE *rhofile;
+  double Cl;
+
+  double lmax = pba->l_max_ncdm;
+  pbadist.pba = pba;
+  double Nq = pba->q_size_ncdm[0]; 
+
+  class_alloc(pba->rhox, sizeof(double*)*(lmax+1),pba->error_message);
+
+    pbadist.l_ncdm = l;
+    pbadist.q = NULL;
+    pbadist.tablesize = 0;
+    if ((pba->use_interp_files)){
+      pfile = fopen(pba->p_filename,"r");
+      rhofile = fopen(pba->rho_filename,"r");
+      printf("Opening file %s\n",pba->p_filename); 
+      printf("Opening file %s\n",pba->rho_filename); 
+      class_test(pfile == NULL,pba->error_message,
+                 "Could not open file %s!",pba->p_filename);
+      class_test(rhofile == NULL,pba->error_message,
+                 "Could not open file %s!",pba->rho_filename);
+      // Find size of table:
+      for (row=0,status=2; status==2; row++){
+        status = fscanf(pfile,"%e %e",&tmp1,&tmp2);
+      }
+      rewind(pfile);
+      pbadist.tablesize = row-1;
+
+      class_alloc(pbadist.q,sizeof(double)*pbadist.tablesize,pba->error_message);
+      class_alloc(pbadist.Cl,sizeof(double)*pbadist.tablesize,pba->error_message);
+      class_alloc(pbadist.d2Cl,sizeof(double)*pbadist.tablesize,pba->error_message);
+      for (row=0; row<pbadist.tablesize; row++){
+        status = fscanf(pfile,"%lf %lf",
+                        &pbadist.x[row],&pbadist.p[row]);
+        //		printf("(q,Cl) = (%g,%g)\n",pbadist.q[row],pbadist.Cl[row]);
+      
+        status2 = fscanf(rhofile,"%lf %lf",
+                        &pbadist.x[row],&pbadist.rho[row]);
+      
+      }
+      fclose(pfile);
+      fclose(rhofile);
+     // printf("tablesize = %i\n", pbadist.tablesize);
+    // printf("q_size = %i\n", pba->q_size_ncdm[0]);
+      
+      class_call(array_spline_table_lines(pbadist.q,
+                                          pbadist.tablesize,
+                                          pbadist.Cl,
+                                          1,
+                                          pbadist.d2Cl,
+                                          _SPLINE_EST_DERIV_,
+                                          pba->error_message),
+                 pba->error_message,
+                 pba->error_message);
+    
+     filenum++;
+    }
+
+    class_alloc(pba->CL_ncdm[l],
+                pba->q_size_ncdm[0]*sizeof(double),
+                pba->error_message);
+
+    int Tnu = pba->T_nu0*pba->T_cmb*_k_B_;
+    for (index_q=0; index_q<pba->q_size_ncdm[0]; index_q++) {
+      q = pba->q_ncdm[0][index_q];
+      class_call(coll_fcn_ncdm(&pbadist,q,&Cl),
+                 pba->error_message,pba->error_message);
+
+     pba->CL_ncdm[l][index_q] = Cl;  
+    }
+
+
+    if ((pba->got_coll_files!=NULL)&&(pba->got_coll_files[l]==_TRUE_)){
+      free(pbadist.q);
+      free(pbadist.Cl);
+      free(pbadist.d2Cl);
+    }
+  }
+
+
+  return _SUCCESS_;
+}
+
+*/
 /**
  * This function 
  *
@@ -2415,6 +2569,9 @@ int background_output_titles(struct background * pba,
   class_store_columntitle(titles,"(.)w_fld",pba->has_fld);
   class_store_columntitle(titles,"(.)rho_ur",pba->has_ur);
   class_store_columntitle(titles,"(.)rho_idr",pba->has_idr);
+  class_store_columntitle(titles,"(.)p_idr",pba->has_idr);
+  class_store_columntitle(titles,"(.)w_idr",pba->has_idr);
+  class_store_columntitle(titles,"(.)cs2_idr",pba->has_idr);
   class_store_columntitle(titles,"(.)rho_idm_dr",pba->has_idm_dr);
   class_store_columntitle(titles,"(.)rho_crit",_TRUE_);
   class_store_columntitle(titles,"(.)rho_dcdm",pba->has_dcdm);
@@ -2474,6 +2631,9 @@ int background_output_data(
     class_store_double(dataptr,pvecback[pba->index_bg_w_fld],pba->has_fld,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_ur],pba->has_ur,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_idr],pba->has_idr,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_p_idr],pba->has_idr,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_w_idr],pba->has_idr,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_cs2_idr],pba->has_idr,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_idm_dr],pba->has_idm_dr,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_crit],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_dcdm],pba->has_dcdm,storeidx);

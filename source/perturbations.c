@@ -618,13 +618,13 @@ int perturb_init(
     }
   }
 
-  class_test((pba->h > _h_BIG_) || (pba->h < _h_SMALL_),
-             ppt->error_message,
+/*  class_test((pba->h > _h_BIG_) || (pba->h < _h_SMALL_),
+            ppt->error_message,
              "Your value of pba->h=%e is out of the bounds [%e , %e] and could cause a crash of the perturbation ODE integration. If you want to force this barrier, you may comment it out in perturbation.c",
              pba->h,
              _h_SMALL_,
              _h_BIG_);
-
+*/
   class_test((pba->Omega0_b*pba->h*pba->h < _omegab_SMALL_) || (pba->Omega0_b*pba->h*pba->h > _omegab_BIG_),
              ppt->error_message,
              "Your value of omega_b=%e is out of the bounds [%e , %e] and could cause a crash of the perturbation ODE integration. If you want to force this barrier, you may comment it out in perturbation.c",
@@ -8599,7 +8599,11 @@ int perturb_derivs(double tau,
         theta_idr = ppw->rsa_theta_idr;
       }
     }
-
+    double w_idr,cs2_idr;
+    if (pba->has_idr == _TRUE_ && pba->N_UV != 0 ){
+     w_idr = pvecback[pba->index_bg_w_idr];
+     cs2_idr = pvecback[pba->index_bg_cs2_idr];
+    }
     /** - --> (e) BEGINNING OF ACTUAL SYSTEM OF EQUATIONS OF EVOLUTION */
 
     /** - ---> photon temperature density */
@@ -8759,7 +8763,11 @@ int perturb_derivs(double tau,
     /** - ---> idr */
     if (pba->has_idr == _TRUE_){
       if (ppw->approx[ppw->index_ap_rsa_idr] == (int)rsa_idr_off) {
-        dy[pv->index_pt_delta_idr] = -4./3.*(theta_idr + metric_continuity);
+	if(pba->N_UV == 0 )
+          dy[pv->index_pt_delta_idr] = -4./3.*(theta_idr + metric_continuity);
+        else 
+          dy[pv->index_pt_delta_idr] = -(1.+w_idr)*(theta_idr + metric_continuity) - 3.*a_prime_over_a*(cs2_idr - w_idr)*delta_idr;
+		  //-(1. + pvecback[pba->index_bg_w_idr])*(theta_idr + metric_continuity)  - 3.*a_prime_over_a*(pba->cs2_idr - pvecback[pba->index_bg_w_idr])*delta_idr;
       }
     }
 
@@ -8914,9 +8922,13 @@ int perturb_derivs(double tau,
           /** - ----> idr velocity */
           if(ppt->idr_nature == idr_free_streaming)
             dy[pv->index_pt_theta_idr] = k2*(y[pv->index_pt_delta_idr]/4.-s2_squared*y[pv->index_pt_shear_idr]) + metric_euler;
-          else
-            dy[pv->index_pt_theta_idr] = k2/4. * y[pv->index_pt_delta_idr] + metric_euler;
-
+          else {
+	    if(pba->N_UV == 0)
+              dy[pv->index_pt_theta_idr] = k2/4. * y[pv->index_pt_delta_idr] + metric_euler;
+	    else 
+	      dy[pv->index_pt_theta_idr] = k2*cs2_idr/(1.+w_idr) * y[pv->index_pt_delta_idr] + metric_euler - a_prime_over_a*(1.-3.*w_idr)*y[pv->index_pt_theta_idr];
+		      //pba->cs2_idr/(1. + pvecback[pba->index_bg_w_idr])*k2 * y[pv->index_pt_delta_idr] + metric_euler - a_prime_over_a*(1.-3.*pba->cs2_idr)*y[pv->index_pt_theta_idr];
+	  }
           if (pba->has_idm_dr == _TRUE_)
             dy[pv->index_pt_theta_idr] += dmu_idm_dr*(y[pv->index_pt_theta_idm_dr]-y[pv->index_pt_theta_idr]);
 

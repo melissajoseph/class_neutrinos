@@ -119,6 +119,19 @@ struct background
   int * got_coll_files;                      /**< list of flags for each species, set to true if
 					     p-s-d is passed through file */
   char * coll_files;                /**< list of filenames for tabulated p-s-d */
+ 
+  // parameters for neff switch with idr
+
+  double N_UV; 
+  double N_IR; 
+  double at; 
+  double R_idr;
+  int use_const_w;
+  double rescale_w_cs2; 
+  double rescale_factor_cs2; 
+  double rescale_factor_w; 
+  double w_idr; 
+  double cs2_idr; 
   double Omega0_k; /**< \f$ \Omega_{0_k} \f$: curvature contribution */
 
   int N_ncdm;                            /**< Number of distinguishable ncdm species */
@@ -205,6 +218,9 @@ struct background
   int index_bg_rho_ur;        /**< relativistic neutrinos/relics density */
   int index_bg_rho_idm_dr;    /**< density of dark matter interacting with dark radiation */
   int index_bg_rho_idr;       /**< density of interacting dark radiation */
+  int index_bg_p_idr;       /**< density of interacting dark radiation */
+  int index_bg_w_idr;       /**< density of interacting dark radiation */
+  int index_bg_cs2_idr;       /**< density of interacting dark radiation */
   int index_bg_rho_dcdm;      /**< dcdm density */
   int index_bg_rho_dr;        /**< dr density */
 
@@ -341,6 +357,8 @@ struct background
   double * factor_ncdm; /**< List of normalization factors for calculating energy density etc.*/
 
   double ** CL_ncdm; /**< array for collision integrals */
+  double ** rho_integral_idr; 
+  double ** pressure_integral_idr; 
   //@}
 
   /**

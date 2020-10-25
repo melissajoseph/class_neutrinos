@@ -208,6 +208,7 @@ int input_init(
 
   int flag1;
   double param1;
+  int param1i; 
   int counter, index_target, i;
   double * unknown_parameter;
   int unknown_parameters_size;
@@ -735,6 +736,7 @@ int input_read_parameters(
 
   if (class_none_of_three(flag1,flag2,flag3)) {
     pba->Omega0_g = (4.*sigma_B/_c_*pow(pba->T_cmb,4.)) / (3.*_c_*_c_*1.e10*pba->h*pba->h/_Mpc_over_m_/_Mpc_over_m_/8./_PI_/_G_);
+    printf("omega0_g = %e", (4.*sigma_B/_c_*pow(pba->T_cmb,4.)) / (3.*_c_*_c_*1.e10/_Mpc_over_m_/_Mpc_over_m_/8./_PI_/_G_));
   }
   else {
 
@@ -877,7 +879,59 @@ int input_read_parameters(
   pba->Omega0_idr = stat_f_idr*pow(pba->T_idr/pba->T_cmb,4.)*pba->Omega0_g;
 
   Omega_tot += pba->Omega0_idr;
+ 
+ // read parameters for neff_switch with idr 
+ class_call(parser_read_double(pfc,"N_IR",&param1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+  if (flag1 == _TRUE_) {
+    pba->T_idr = pow(param1/stat_f_idr*(7./8.)/pow(11./4.,(4./3.)),(1./4.)) * pba->T_cmb;
+    pba->N_IR = param1; 
+    if (input_verbose > 1)
+      printf("You passed N_idr = N_dg = %e, this is equivalent to xi_idr = %e in the ETHOS notation. \n", param2, pba->T_idr/pba->T_cmb);
+    class_call(parser_read_string(pfc,"idr_nature",&string1,&flag1,errmsg),
+                 errmsg,
+                 errmsg);
 
+    if (flag1 == _TRUE_) {
+      if ((strstr(string1,"free_streaming") != NULL) || (strstr(string1,"Free_Streaming") != NULL) || (strstr(string1,"Free_streaming") != NULL) || (strstr(string1,"FREE_STREAMING") != NULL)) {
+        ppt->idr_nature = idr_free_streaming;
+      }
+      if ((strstr(string1,"fluid") != NULL) || (strstr(string1,"Fluid") != NULL) || (strstr(string1,"FLUID") != NULL)) {
+        ppt->idr_nature = idr_fluid;
+      }
+    }
+  }
+  pba->Omega0_idr = stat_f_idr*pow(pba->T_idr/pba->T_cmb,4.)*pba->Omega0_g;
+  Omega_tot += pba->Omega0_idr;
+ 
+  class_read_double("N_UV", pba->N_UV); 
+  class_read_double("a_transition", pba->at); 
+  pba->R_idr = pba->N_IR/pba->N_UV; 
+  class_call(parser_read_double(pfc,"use_const_w",&param1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if (flag1 == _TRUE_ && param1 == 1.) {
+    class_read_double("w_idr", pba->w_idr);
+    pba->use_const_w = 1;
+  }
+  class_call(parser_read_double(pfc,"use_idr_cs2",&param1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if (flag1 == _TRUE_ && param1 == 1.) {
+    class_read_double("cs2_idr", pba->cs2_idr);
+  }
+  class_call(parser_read_double(pfc,"rescale_w_cs2",&param1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if (flag1 == _TRUE_ && param1 == 1.) {
+    pba->rescale_w_cs2 = 1;
+  class_read_double("rescale_factor_w", pba->rescale_factor_w); 
+  class_read_double("rescale_factor_cs2", pba->rescale_factor_cs2); 
+  }
   /** - Omega_0_cdm (CDM) */
   class_call(parser_read_double(pfc,"Omega_cdm",&param1,&flag1,errmsg),
              errmsg,
@@ -3274,6 +3328,16 @@ int input_default_params(
   pba->inu_window_size = 8;
   pba->T_nu0 = pow(4/11.,1/3.);
 
+  pba->N_UV = 0;
+  pba->N_IR = 0;
+  pba->at = 1;
+  pba->use_const_w = 0;
+  pba->cs2_idr = 1./3.;
+  pba->w_idr = 1./3.;
+  pba->rescale_w_cs2 = 0;
+  pba->rescale_factor_cs2 = 1.; 
+  pba->rescale_factor_w = 1.; 
+  
   pba->Omega0_scf = 0.; /* Scalar field defaults */
   pba->attractor_ic_scf = _TRUE_;
   pba->scf_parameters = NULL;
