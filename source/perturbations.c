@@ -8912,6 +8912,7 @@ int perturb_derivs(double tau,
         - (k2 + a2*pvecback[pba->index_bg_ddV_scf])*y[pv->index_pt_phi_scf]; //checked
 
     }
+
     /** - ---> interacting dark radiation */
     if (pba->has_idr == _TRUE_){
 

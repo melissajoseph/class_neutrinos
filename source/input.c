@@ -736,7 +736,7 @@ int input_read_parameters(
 
   if (class_none_of_three(flag1,flag2,flag3)) {
     pba->Omega0_g = (4.*sigma_B/_c_*pow(pba->T_cmb,4.)) / (3.*_c_*_c_*1.e10*pba->h*pba->h/_Mpc_over_m_/_Mpc_over_m_/8./_PI_/_G_);
-    printf("omega0_g = %e", (4.*sigma_B/_c_*pow(pba->T_cmb,4.)) / (3.*_c_*_c_*1.e10/_Mpc_over_m_/_Mpc_over_m_/8./_PI_/_G_));
+   
   }
   else {
 
@@ -888,7 +888,7 @@ int input_read_parameters(
     pba->T_idr = pow(param1/stat_f_idr*(7./8.)/pow(11./4.,(4./3.)),(1./4.)) * pba->T_cmb;
     pba->N_IR = param1; 
     if (input_verbose > 1)
-      printf("You passed N_idr = N_dg = %e, this is equivalent to xi_idr = %e in the ETHOS notation. \n", param2, pba->T_idr/pba->T_cmb);
+     printf("You passed N_idr = N_dg = %e, this is equivalent to xi_idr = %e in the ETHOS notation. \n", param1, pba->T_idr/pba->T_cmb);
     class_call(parser_read_string(pfc,"idr_nature",&string1,&flag1,errmsg),
                  errmsg,
                  errmsg);
@@ -902,7 +902,7 @@ int input_read_parameters(
       }
     }
   }
-  pba->Omega0_idr = stat_f_idr*pow(pba->T_idr/pba->T_cmb,4.)*pba->Omega0_g;
+  pba->Omega0_idr =stat_f_idr* pow(pba->T_idr/pba->T_cmb,4.)*pba->Omega0_g;
   Omega_tot += pba->Omega0_idr;
  
   class_read_double("N_UV", pba->N_UV); 
@@ -932,6 +932,22 @@ int input_read_parameters(
   class_read_double("rescale_factor_w", pba->rescale_factor_w); 
   class_read_double("rescale_factor_cs2", pba->rescale_factor_cs2); 
   }
+
+  class_call(parser_read_double(pfc,"use_interp_files",&param1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if (flag1 == _TRUE_ && param1 == 1.) {
+    pba->use_interp_files = 1;
+    class_call(parser_read_list_of_strings(pfc,"p_filename",
+                                               &entries_read,&(pba->p_filename_idr),&flag2,errmsg),
+                   errmsg,
+                   errmsg);
+   class_test(flag2 == _FALSE_,errmsg,
+                   "Input use_coll_files is found, but no filenames found!");
+  }
+
+
   /** - Omega_0_cdm (CDM) */
   class_call(parser_read_double(pfc,"Omega_cdm",&param1,&flag1,errmsg),
              errmsg,
@@ -1361,7 +1377,11 @@ int input_read_parameters(
                errmsg);
   }
  }
-    
+   if( pba->use_interp_files)
+     class_call(rho_p_inter_init(ppr,pba),
+               pba->error_message,
+               errmsg);
+  
   Omega_tot += pba->Omega0_ncdm_tot;
 
   /** - Omega_0_k (effective fractional density of curvature) */
@@ -3337,6 +3357,7 @@ int input_default_params(
   pba->rescale_w_cs2 = 0;
   pba->rescale_factor_cs2 = 1.; 
   pba->rescale_factor_w = 1.; 
+  pba->use_interp_files = 0;
   
   pba->Omega0_scf = 0.; /* Scalar field defaults */
   pba->attractor_ic_scf = _TRUE_;

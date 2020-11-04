@@ -132,6 +132,8 @@ struct background
   double rescale_factor_w; 
   double w_idr; 
   double cs2_idr; 
+  int use_interp_files;
+  char *  p_filename_idr; 
   double Omega0_k; /**< \f$ \Omega_{0_k} \f$: curvature contribution */
 
   int N_ncdm;                            /**< Number of distinguishable ncdm species */
@@ -357,8 +359,16 @@ struct background
   double * factor_ncdm; /**< List of normalization factors for calculating energy density etc.*/
 
   double ** CL_ncdm; /**< array for collision integrals */
-  double ** rho_integral_idr; 
-  double ** pressure_integral_idr; 
+  double * rho_integral_idr; 
+  double * d2_rho_integral_idr; 
+  double * d_rho_integral_idr; 
+  double * dd2_rho_integral_idr; 
+  double * pressure_integral_idr; 
+  double * d2_pressure_integral_idr; 
+  double * d_pressure_integral_idr; 
+  double * dd2_pressure_integral_idr; 
+  double * x_integral_idr; 
+  int tablesize_idr; 
   //@}
 
   /**
@@ -579,6 +589,10 @@ extern "C" {
 //melissa read collision files
 
   int collision_ncdm_init(
+			    struct precision *ppr,
+			    struct background *pba
+			    );
+  int rho_p_inter_init(
 			    struct precision *ppr,
 			    struct background *pba
 			    );

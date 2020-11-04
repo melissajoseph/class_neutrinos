@@ -1079,6 +1079,9 @@ cdef class Class:
     def Omega_b(self):
         return self.ba.Omega0_b
 
+    def Omega_idr(self):
+        return self.ba.Omega0_idr
+
     def omega_b(self):
         return self.ba.Omega0_b * self.ba.h * self.ba.h
 
@@ -1091,6 +1094,10 @@ cdef class Class:
     def k_eq(self):
         self.compute(["background"])
         return self.ba.a_eq*self.ba.H_eq
+
+    def a_eq(self):
+        self.compute(["background"])
+        return self.ba.a_eq
 
     def sigma8(self):
         self.compute(["nonlinear"])
@@ -1813,6 +1820,8 @@ cdef class Class:
                 value = self.nl.sigma8[self.nl.index_pk_cb]
             elif name == 'k_eq':
                 value = self.ba.a_eq*self.ba.H_eq
+            elif name == 'a_eq':
+                value = self.ba.a_eq
 
             else:
                 raise CosmoSevereError("%s was not recognized as a derived parameter" % name)

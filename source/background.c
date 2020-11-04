@@ -455,10 +455,123 @@ int background_functions(
      long double y1avg, y2avg;  
      double a_at = a_rel/pba->at;
      double R3 = pow(pba->R_idr,3); 
-    
+     double rho_x,pressure_x,drho_x,dpressure_x; 
+   
      double yii = pow(1. + 1./20.* pow(a_at,2)*(1. + pow(pba->R_idr/a_at ,2))/(1. +pow(1./a_at,2)), -3);
-     
      yi = pow(1. + yii *(R3 - 1.), 1./3.);
+    
+     double x_mt = a_at * (1. + pow(a_at,-2)*R3)/(1. + pow(pba->R_idr/a_at,2));  
+     double T1, rho1,p1,cs2_i,w1; 
+     if(pba->use_interp_files) {
+     int lastindex = 99; 
+     double s0 = 4./(_PI_*_PI_); 
+     double r0 = 3./(_PI_*_PI_); 
+     double p0 = 1./(_PI_*_PI_); 
+     double midr = pba->T_idr/pba->at;
+
+     if (x_mt < 100 ) { 
+     //interpolation
+      class_call(array_interpolate_spline(
+                                          pba->x_integral_idr,
+                                          pba->tablesize_idr,
+                                          pba->rho_integral_idr,
+                                          pba->d2_rho_integral_idr,
+                                          1,
+                                          x_mt,
+                                          &lastindex,
+					  &(rho_x),
+                                          1,
+                                          pba->error_message),
+                 pba->error_message,     pba->error_message);
+      class_call(array_interpolate_spline(
+                                          pba->x_integral_idr,
+                                          pba->tablesize_idr,
+                                          pba->pressure_integral_idr,
+                                          pba->d2_pressure_integral_idr,
+                                          1,
+                                          x_mt,
+                                          &lastindex,
+					  &(pressure_x),
+                                          1,
+                                          pba->error_message),
+                 pba->error_message,     pba->error_message);
+     } else { 
+	     rho_x = exp(-x_mt)*pow(x_mt, 5./2.)*pow(2.*_PI_,-3./2.); 
+             pressure_x = exp(-x_mt)*pow(x_mt, 3./2.)*pow(2.*_PI_,-3./2.); 
+	     drho_x = 0; 
+	     dpressure_x = 0;
+     }
+     
+     T1 =  pba->T_idr/a_rel*pow(1. + (R3 - 1.) *(rho_x + pressure_x)/s0,-1./3.);
+     double xmt2 = pba->T_idr/pba->at/T1;  
+     if (xmt2 < 100 ) { 
+     class_call(array_interpolate_spline(
+                                          pba->x_integral_idr,
+                                          pba->tablesize_idr,
+                                          pba->rho_integral_idr,
+                                          pba->d2_rho_integral_idr,
+                                          1,
+                                          xmt2,
+                                          &lastindex,
+					  &(rho_x),
+                                          1,
+                                          pba->error_message),
+                 pba->error_message,     pba->error_message);
+
+     class_call(array_interpolate_spline(
+                                          pba->x_integral_idr,
+                                          pba->tablesize_idr,
+                                          pba->pressure_integral_idr,
+                                          pba->d2_pressure_integral_idr,
+                                          1,
+                                          xmt2,
+                                          &lastindex,
+					  &(pressure_x),
+                                          1,
+                                          pba->error_message),
+                 pba->error_message,     pba->error_message);
+
+      class_call(array_interpolate_spline(
+                                          pba->x_integral_idr,
+                                          pba->tablesize_idr,
+                                          pba->d_rho_integral_idr,
+                                          pba->dd2_rho_integral_idr,
+                                          1,
+                                          xmt2,
+                                          &lastindex,
+					  &(drho_x),
+                                          1,
+                                          pba->error_message),
+                 pba->error_message,     pba->error_message);
+      class_call(array_interpolate_spline(
+                                          pba->x_integral_idr,
+                                          pba->tablesize_idr,
+                                          pba->d_pressure_integral_idr,
+                                          pba->dd2_pressure_integral_idr,
+                                          1,
+                                          xmt2,
+                                          &lastindex,
+					  &(dpressure_x),
+                                          1,
+                                          pba->error_message),
+                 pba->error_message,     pba->error_message);
+     } else {
+
+	     rho_x = exp(-xmt2)*pow(xmt2, 5./2.)*pow(2.*_PI_,-3./2.); 
+             pressure_x = exp(-xmt2)*pow(xmt2, 3./2.)*pow(2.*_PI_,-3./2.); 
+	     drho_x = 0; 
+	     dpressure_x = 0;
+
+     }
+     rho1 = pba->R_idr *pow((pba->R_idr - 1.)*rho_x*_PI_*_PI_/3. + 1., -1.); 
+	    // ((R3-1.)*rho_x*_PI_*_PI_/3. + 1.)*pow(T1,4.); 
+     
+     w1 = 1./3. * ((R3 - 1.)*pressure_x*_PI_*_PI_ + 1.)/( (R3 - 1.)* rho_x*_PI_*_PI_/3. +1);
+//     p1 = ((R3-1.)*pressure_x*_PI_*_PI_ + 1.)*pow(T1,4.); 
+     cs2_i = 1./3. * ((R3 - 1.)*(_PI_*_PI_* midr/4. * dpressure_x/T1 - pressure_x*_PI_*_PI_) - 1.) / 
+	     ( (R3 - 1.)*(_PI_*_PI_* midr/12. * drho_x/T1 - rho_x*_PI_*_PI_/3.) - 1.); 
+     }
+     else{
      fsi = exp(-yi*a_at)*(1.+yi*a_at+pow(yi*a_at,2)/4. + pow(_PI_/2.,1/2)/8.*pow(yi*a_at,5./2.));  
      y1 = pow(1. + (R3 - 1.)*fsi,1./3.);
      y1avg = (2.*y1 + yi)/3.;
@@ -473,12 +586,28 @@ int background_functions(
 
      Nfluid = pba->N_IR/pow(y2avg,4)*(1. + (R3 - 1.)*fr); 
      Npressure = pba->N_IR/pow(y2avg,4)*(1. + (R3 - 1.)*fp);
-
+     }
      
+     if(pba->use_interp_files) {
+       pvecback[pba->index_bg_rho_idr] = rho1 *(pba->N_UV*7./8.*pow(4./11.,4./3.)*pba->Omega0_g * pow(pba->H0,2)) / pow(a_rel,4.);
+       pvecback[pba->index_bg_p_idr] = w1*pvecback[pba->index_bg_rho_idr];
+       pvecback[pba->index_bg_w_idr] = w1;
+       pvecback[pba->index_bg_cs2_idr] = cs2_i;
+     
+     //  if ((a_rel - pba->at)/a_rel < pow(10,-4)) 
+//	       printf("a = %e, x = %e , rho_x = %e, pressure_x = %e, w_idr = %e, cs2 = %e \n"
+//			       ,a_rel, x_mt,rho_x,pressure_x, w1 ,cs2_i); 
+     }	     
+     else {
+       pvecback[pba->index_bg_rho_idr] = Nfluid * (pba->N_UV*7./8.*pow(4./11.,4./3.)*pba->Omega0_g * pow(pba->H0,2)) / pow(a_rel,4); 
+       pvecback[pba->index_bg_p_idr] = (1./3.)* Npressure* (pba->N_UV*7./8.*pow(4./11.,4./3.)*pba->Omega0_g * pow(pba->H0,2)) / pow(a_rel,4); 
+       pvecback[pba->index_bg_w_idr] = pvecback[pba->index_bg_p_idr]/pvecback[pba->index_bg_rho_idr]; 
+       pvecback[pba->index_bg_cs2_idr] = (1./3.)* (1. + (R3 - 1.)*fp - 1./4.*(R3 - 1.)*y2avg*a_at*fpp) / 
+							(1. + (R3 - 1.)*fr - 1./4.*(R3 - 1.)*y2avg*a_at*frp);
+     }
      if (pba->use_const_w == 1) {
        pvecback[pba->index_bg_rho_idr] = Nfluid * (pba->N_UV*7./8.*pow(4./11.,4./3.)*pba->Omega0_g * pow(pba->H0,2)) / pow(a_rel,3.*(1.+pba->w_idr)); 
-       pvecback[pba->index_bg_p_idr] = pba->w_idr *Npressure* (pba->N_UV*7./8.*pow(4./11.,4./3.)*pba->Omega0_g * pow(pba->H0,2)) / pow(a_rel,4);
-       pvecback[pba->index_bg_w_idr] = pvecback[pba->index_bg_p_idr]/pvecback[pba->index_bg_rho_idr]; 
+       pvecback[pba->index_bg_p_idr] = pba->w_idr *pvecback[pba->index_bg_rho_idr];
        pvecback[pba->index_bg_w_idr] = pba->w_idr;
        pvecback[pba->index_bg_cs2_idr] = pba->cs2_idr;
      } 
@@ -493,13 +622,6 @@ int background_functions(
        pvecback[pba->index_bg_cs2_idr] = pba->rescale_factor_cs2*(pvecback[pba->index_bg_cs2_idr] - 1./3.) + 1./3.;
 
 
-     }
-     else {
-       pvecback[pba->index_bg_rho_idr] = Nfluid * (pba->N_UV*7./8.*pow(4./11.,4./3.)*pba->Omega0_g * pow(pba->H0,2)) / pow(a_rel,4); 
-       pvecback[pba->index_bg_p_idr] = (1./3.)* Npressure* (pba->N_UV*7./8.*pow(4./11.,4./3.)*pba->Omega0_g * pow(pba->H0,2)) / pow(a_rel,4); 
-       pvecback[pba->index_bg_w_idr] = pvecback[pba->index_bg_p_idr]/pvecback[pba->index_bg_rho_idr]; 
-       pvecback[pba->index_bg_cs2_idr] = (1./3.)* (1. + (R3 - 1.)*fp - 1./4.*(R3 - 1.)*y2avg*a_at*fpp) / 
-							(1. + (R3 - 1.)*fr - 1./4.*(R3 - 1.)*y2avg*a_at*frp);
      }
      p_tot += pvecback[pba->index_bg_p_idr]; 
      rho_r += pvecback[pba->index_bg_rho_idr];
@@ -1746,99 +1868,97 @@ int coll_fcn_ncdm(
   return _SUCCESS_;
 }
 
-/*
+
 int rho_p_inter_init(
                          struct precision *ppr,
                          struct background *pba ) {
 
   int index_x, k,tolexp,row,status,filenum;
-  double f0m2,f0m1,f0,f0p1,f0p2,dq,q,df0dq,tmp1,tmp2;
-  struct parameters_for_coll_ncdm pbadist;
+  double f0m2,f0m1,f0,f0p1,f0p2,dq,q,df0dq,tmp1,tmp2,tmp3,tmp4,tmp5;
   FILE *pfile;
-  FILE *rhofile;
-  double Cl;
+  int tablesize;
 
-  double lmax = pba->l_max_ncdm;
-  pbadist.pba = pba;
-  double Nq = pba->q_size_ncdm[0]; 
 
-  class_alloc(pba->rhox, sizeof(double*)*(lmax+1),pba->error_message);
-
-    pbadist.l_ncdm = l;
-    pbadist.q = NULL;
-    pbadist.tablesize = 0;
     if ((pba->use_interp_files)){
-      pfile = fopen(pba->p_filename,"r");
-      rhofile = fopen(pba->rho_filename,"r");
-      printf("Opening file %s\n",pba->p_filename); 
-      printf("Opening file %s\n",pba->rho_filename); 
+      pfile = fopen(pba->p_filename_idr,"r");
+//      printf("Opening file %s\n",pba->p_filename_idr); 
       class_test(pfile == NULL,pba->error_message,
-                 "Could not open file %s!",pba->p_filename);
-      class_test(rhofile == NULL,pba->error_message,
-                 "Could not open file %s!",pba->rho_filename);
+                 "Could not open file %s!",pba->p_filename_idr);
       // Find size of table:
-      for (row=0,status=2; status==2; row++){
-        status = fscanf(pfile,"%e %e",&tmp1,&tmp2);
+      for (row=0,status=5; status==5; row++){
+        status = fscanf(pfile,"%lf %e %e %e %e",&tmp1,&tmp2,&tmp3,&tmp4,&tmp5);
       }
       rewind(pfile);
-      pbadist.tablesize = row-1;
-
-      class_alloc(pbadist.q,sizeof(double)*pbadist.tablesize,pba->error_message);
-      class_alloc(pbadist.Cl,sizeof(double)*pbadist.tablesize,pba->error_message);
-      class_alloc(pbadist.d2Cl,sizeof(double)*pbadist.tablesize,pba->error_message);
-      for (row=0; row<pbadist.tablesize; row++){
-        status = fscanf(pfile,"%lf %lf",
-                        &pbadist.x[row],&pbadist.p[row]);
-        //		printf("(q,Cl) = (%g,%g)\n",pbadist.q[row],pbadist.Cl[row]);
+      pba->tablesize_idr = row-1;
+      tablesize = pba->tablesize_idr;
+//      printf("tablesize = %d \n" ,row-1); 
       
-        status2 = fscanf(rhofile,"%lf %lf",
-                        &pbadist.x[row],&pbadist.rho[row]);
+      
+      class_alloc(pba->rho_integral_idr,sizeof(double)*tablesize,pba->error_message);
+      class_alloc(pba->d2_rho_integral_idr,sizeof(double)*tablesize,pba->error_message);
+      class_alloc(pba->d_rho_integral_idr,sizeof(double)*tablesize,pba->error_message);
+      class_alloc(pba->dd2_rho_integral_idr,sizeof(double)*tablesize,pba->error_message);
+      class_alloc(pba->pressure_integral_idr,sizeof(double)*tablesize,pba->error_message);
+      class_alloc(pba->d2_pressure_integral_idr,sizeof(double)*tablesize,pba->error_message);
+      class_alloc(pba->d_pressure_integral_idr,sizeof(double)*tablesize,pba->error_message);
+      class_alloc(pba->dd2_pressure_integral_idr,sizeof(double)*tablesize,pba->error_message);
+      class_alloc(pba->x_integral_idr,sizeof(double)*tablesize,pba->error_message);
+      for (row=0; row<tablesize; row++){
+        status = fscanf(pfile,"%lf %lf %lf %lf %lf",
+                        &pba->x_integral_idr[row],&pba->rho_integral_idr[row],&pba->pressure_integral_idr[row],&pba->d_rho_integral_idr[row],&pba->d_pressure_integral_idr[row]);
+        //		printf("(q,Cl) = (%g,%g)\n",pbadist.q[row],pbadist.Cl[row]);
       
       }
       fclose(pfile);
-      fclose(rhofile);
      // printf("tablesize = %i\n", pbadist.tablesize);
     // printf("q_size = %i\n", pba->q_size_ncdm[0]);
       
-      class_call(array_spline_table_lines(pbadist.q,
-                                          pbadist.tablesize,
-                                          pbadist.Cl,
+      /* Call spline interpolation: */
+      class_call(array_spline_table_lines(pba->x_integral_idr,
+                                          tablesize,
+                                          pba->rho_integral_idr,
                                           1,
-                                          pbadist.d2Cl,
+                                          pba->d2_rho_integral_idr,
                                           _SPLINE_EST_DERIV_,
                                           pba->error_message),
                  pba->error_message,
                  pba->error_message);
-    
-     filenum++;
-    }
+      class_call(array_spline_table_lines(pba->x_integral_idr,
+                                          tablesize,
+                                          pba->d_rho_integral_idr,
+                                          1,
+                                          pba->dd2_rho_integral_idr,
+                                          _SPLINE_EST_DERIV_,
+                                          pba->error_message),
+                 pba->error_message,
+                 pba->error_message);
 
-    class_alloc(pba->CL_ncdm[l],
-                pba->q_size_ncdm[0]*sizeof(double),
-                pba->error_message);
+       class_call(array_spline_table_lines(pba->x_integral_idr,
+                                          tablesize,
+                                          pba->pressure_integral_idr,
+                                          1,
+                                          pba->d2_pressure_integral_idr,
+                                          _SPLINE_EST_DERIV_,
+                                          pba->error_message),
+                 pba->error_message,
+                 pba->error_message);
+       class_call(array_spline_table_lines(pba->x_integral_idr,
+                                          tablesize,
+                                          pba->d_pressure_integral_idr,
+                                          1,
+                                          pba->dd2_pressure_integral_idr,
+                                          _SPLINE_EST_DERIV_,
+                                          pba->error_message),
+                 pba->error_message,
+                 pba->error_message);
 
-    int Tnu = pba->T_nu0*pba->T_cmb*_k_B_;
-    for (index_q=0; index_q<pba->q_size_ncdm[0]; index_q++) {
-      q = pba->q_ncdm[0][index_q];
-      class_call(coll_fcn_ncdm(&pbadist,q,&Cl),
-                 pba->error_message,pba->error_message);
 
-     pba->CL_ncdm[l][index_q] = Cl;  
-    }
-
-
-    if ((pba->got_coll_files!=NULL)&&(pba->got_coll_files[l]==_TRUE_)){
-      free(pbadist.q);
-      free(pbadist.Cl);
-      free(pbadist.d2Cl);
-    }
   }
-
-
+  
   return _SUCCESS_;
 }
 
-*/
+
 /**
  * This function 
  *
