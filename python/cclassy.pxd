@@ -71,6 +71,7 @@ cdef extern from "class.h":
         double Omega0_b
         double Omega0_idr
         double T_idr
+        double at_mid_idr
         double Omega0_idm_dr
         double Omega0_cdm
         double Omega0_dcdm
@@ -105,6 +106,7 @@ cdef extern from "class.h":
         double z_rec
         double tau_rec
         double rs_rec
+        double rd_rec
         double ds_rec
         double da_rec
         double z_star

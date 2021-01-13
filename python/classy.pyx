@@ -1090,7 +1090,11 @@ cdef class Class:
 
     def YHe(self):
         return self.th.YHe
-    
+
+    def at_mid(self):
+        self.compute(["background"])
+        return self.ba.at_mid_idr
+
     def k_eq(self):
         self.compute(["background"])
         return self.ba.a_eq*self.ba.H_eq
@@ -1114,6 +1118,22 @@ cdef class Class:
     def rs_drag(self):
         self.compute(["thermodynamics"])
         return self.th.rs_d
+    
+    def rs_rec(self):
+        self.compute(["thermodynamics"])
+        return self.th.rs_rec
+
+    def rd_rec(self):
+        self.compute(["thermodynamics"])
+        return self.th.rd_rec
+
+    def da_rec(self):
+        self.compute(["thermodynamics"])
+        return self.th.da_rec
+ 
+    def z_rec(self):
+        self.compute(["thermodynamics"])
+        return self.th.z_rec
 
     def z_reio(self):
         self.compute(["thermodynamics"])
@@ -1714,6 +1734,8 @@ cdef class Class:
                 value = self.th.tau_rec
             elif name == 'rs_rec':
                 value = self.th.rs_rec
+            elif name == 'rd_rec':
+                value = self.th.rd_rec
             elif name == 'rs_rec_h':
                 value = self.th.rs_rec*self.ba.h
             elif name == 'ds_rec':

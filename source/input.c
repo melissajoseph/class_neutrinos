@@ -887,6 +887,8 @@ int input_read_parameters(
   if (flag1 == _TRUE_) {
     pba->T_idr = pow(param1/stat_f_idr*(7./8.)/pow(11./4.,(4./3.)),(1./4.)) * pba->T_cmb;
     pba->N_IR = param1; 
+    pba->Omega0_idr =stat_f_idr* pow(pba->T_idr/pba->T_cmb,4.)*pba->Omega0_g;
+    Omega_tot += pba->Omega0_idr;
     if (input_verbose > 1)
      printf("You passed N_idr = N_dg = %e, this is equivalent to xi_idr = %e in the ETHOS notation. \n", param1, pba->T_idr/pba->T_cmb);
     class_call(parser_read_string(pfc,"idr_nature",&string1,&flag1,errmsg),
@@ -902,8 +904,6 @@ int input_read_parameters(
       }
     }
   }
-  pba->Omega0_idr =stat_f_idr* pow(pba->T_idr/pba->T_cmb,4.)*pba->Omega0_g;
-  Omega_tot += pba->Omega0_idr;
  
   class_read_double("N_UV", pba->N_UV); 
   class_read_double("a_transition", pba->at); 
@@ -1186,6 +1186,10 @@ int input_read_parameters(
   class_read_double("inu_window_size", pba->inu_window_size);
   class_read_double("inu_window_mid", pba->inu_window_mid);
   class_read_double("tca_trigger", ppr->tca_trigger);
+  class_read_int("use_newtonian_shear", pba->use_newtonian_shear);
+  class_read_int("use_tca_ic", pba->use_tca_ic);
+  class_read_int("use_tca_ic_eta", pba->use_tca_ic_eta);
+  class_read_int("shear_zero", pba->shear_zero);
   
   if (pba->gamma_n < -2) ppr->tca_trigger = 1000.;
   if(input_verbose > 0 && pba->Geff > 0 ) printf("Geff = %e MeV^-2 \n", pba->Geff);
@@ -3339,6 +3343,10 @@ int input_default_params(
   pba->ncdm_psd_parameters = NULL;
   pba->ncdm_psd_files = NULL;
   pba->Geff = 0;
+  pba->use_newtonian_shear = 0;
+  pba->use_tca_ic = 0;
+  pba->shear_zero = 0;
+  pba->use_tca_ic_eta = 0;
   pba->gamma_n = 4;
   pba->read_coll_files = _FALSE_;
 
@@ -3351,6 +3359,7 @@ int input_default_params(
   pba->N_UV = 0;
   pba->N_IR = 0;
   pba->at = 1;
+  pba->at_mid_idr = 1;
   pba->use_const_w = 0;
   pba->cs2_idr = 1./3.;
   pba->w_idr = 1./3.;

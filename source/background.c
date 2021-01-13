@@ -444,7 +444,7 @@ int background_functions(
 
   /* interacting dark radiation */
   if (pba->has_idr == _TRUE_) {
-    if (pba->N_IR == 0) {
+    if (pba->N_IR == 0 && pba->N_UV == 0) {
       pvecback[pba->index_bg_rho_idr] = pba->Omega0_idr * pow(pba->H0,2) / pow(a_rel,4);
       rho_tot += pvecback[pba->index_bg_rho_idr];
       p_tot += (1./3.) * pvecback[pba->index_bg_rho_idr];
@@ -606,8 +606,7 @@ int background_functions(
 							(1. + (R3 - 1.)*fr - 1./4.*(R3 - 1.)*y2avg*a_at*frp);
      }
      if (pba->use_const_w == 1) {
-       pvecback[pba->index_bg_rho_idr] = Nfluid * (pba->N_UV*7./8.*pow(4./11.,4./3.)*pba->Omega0_g * pow(pba->H0,2)) / pow(a_rel,3.*(1.+pba->w_idr)); 
-       pvecback[pba->index_bg_p_idr] = pba->w_idr *pvecback[pba->index_bg_rho_idr];
+     //  pvecback[pba->index_bg_p_idr] = pba->w_idr *pvecback[pba->index_bg_rho_idr];
        pvecback[pba->index_bg_w_idr] = pba->w_idr;
        pvecback[pba->index_bg_cs2_idr] = pba->cs2_idr;
      } 
@@ -626,7 +625,14 @@ int background_functions(
      p_tot += pvecback[pba->index_bg_p_idr]; 
      rho_r += pvecback[pba->index_bg_rho_idr];
      rho_tot += pvecback[pba->index_bg_rho_idr];
-      }
+
+     double rho_mid = (1. + 1./pba->R_idr) *pba->Omega0_idr * pow(pba->H0,2) / pow(a_rel,4);
+     if ( fabs(pvecback[pba->index_bg_rho_idr]/rho_mid - 0.5)/0.5 < 0.01 )
+	pba->at_mid_idr = a_rel;    
+//   printf("mid = %lf \n",(pvecback[pba->index_bg_rho_idr]/rho_mid - 0.5)/0.5);
+ 
+    
+    }
   } 
 
   /** - compute expansion rate H from Friedmann equation: this is the

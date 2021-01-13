@@ -125,6 +125,7 @@ struct background
   double N_UV; 
   double N_IR; 
   double at; 
+  double at_mid_idr; 
   double R_idr;
   int use_const_w;
   double rescale_w_cs2; 
@@ -133,6 +134,10 @@ struct background
   double w_idr; 
   double cs2_idr; 
   int use_interp_files;
+  int use_newtonian_shear;
+  int use_tca_ic;
+  int use_tca_ic_eta;
+  int shear_zero;
   char *  p_filename_idr; 
   double Omega0_k; /**< \f$ \Omega_{0_k} \f$: curvature contribution */
 

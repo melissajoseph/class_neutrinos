@@ -5163,8 +5163,6 @@ int perturb_initial_conditions(struct precision * ppr,
     /* f_nu = Omega_nu(t_i) / Omega_r(t_i) */
     fracnu = rho_nu/rho_r;
 
-    if (pba->Geff > 0 && pba->gamma_n >= 1)
-      fracnu =0;
     /* f_g = Omega_g(t_i) / Omega_r(t_i) */
     fracg = ppw->pvecback[pba->index_bg_rho_g]/rho_r;
 
@@ -5281,31 +5279,57 @@ int perturb_initial_conditions(struct precision * ppr,
 
       /* all relativistic relics: ur, early ncdm, dr */
 
-      if ((pba->has_ur == _TRUE_) || (pba->has_ncdm == _TRUE_) || (pba->has_dr == _TRUE_) || (pba->has_idr == _TRUE_)) {
-        delta_ur = ppw->pv->y[ppw->pv->index_pt_delta_g]; /* density of ultra-relativistic neutrinos/relics */
-        theta_ur = ppw->pv->y[ppw->pv->index_pt_theta_g];
-        l3_ur = ktau_three*2./7./(12.*fracnu+45.)* ppr->curvature_ini;//TBC
-    double aref = 2.97e-4;
-    double gamma_int = (1./pow(aref,4))*pow(pba->T_nu0*pba->T_cmb*_k_B_,5)*pow(pba->Geff/(1e12*_eV_*_eV_),2)*(2.*_PI_/_h_P_)/_c_*_Mpc_over_m_*pow(aref/a,pba->gamma_n);
-//        printf("gamma_int = % e \n", pow(pba->T_nu0*pba->T_cmb*_k_B_,5)*pow(pba->Geff/(1e12*_eV_*_eV_),2)*(2.*_PI_/_h_P_)/_c_*_Mpc_over_m_);
-	if (pba->Geff > 0 && gamma_int > ppr->tca_trigger*a_prime_over_a && gamma_int > ppr->tca_trigger*k){
-          
-          shear_ur = 4./15.*(k*k*tau/3.+theta_ur)/gamma_int;
+        double aref = 2.97e-4;
+     	double gamma_int = (1./pow(aref,4))*pow(pba->T_nu0*pba->T_cmb*_k_B_,5)*pow(pba->Geff/(1e12*_eV_*_eV_),2)*(2.*_PI_/_h_P_)/_c_*_Mpc_over_m_*pow(aref/a,pba->gamma_n);
        
+	if ((pba->has_ur == _TRUE_) || (pba->has_ncdm == _TRUE_) || (pba->has_dr == _TRUE_) || (pba->has_idr == _TRUE_)) {
+        delta_ur = ppw->pv->y[ppw->pv->index_pt_delta_g]; /* density of ultra-relativistic neutrinos/relics */
+
+	if (pba->use_tca_ic){
+        
+         // theta_ur = ppw->pv->y[ppw->pv->index_pt_theta_g] *(1.+ 8./(15.+4.*fracnu + 7.5*gamma_int/a_prime_over_a));
+	  //theta_ur = - k*ktau_three/36./(4.*fracnu+15.) * (4.*fracnu+11.+12.*s2_squared-3.*(8.*fracnu*fracnu+50.*fracnu+275.)/20./(2.*fracnu+15.)*tau*om) * ppr->curvature_ini * s2_squared;
+//	shear_ur = 4./15.*(k*k*tau/3.+theta_ur)/gamma_int; 
+       // shear_ur = 2./3. *ktau_two* 1./(15.+4.*fracnu + 7.5*gamma_int/a_prime_over_a);
+	theta_ur = - k*ktau_three/36./(4.*fracnu+15. + 7.5*gamma_int/a_prime_over_a) * (4.*fracnu+ 23. + 7.5*gamma_int/a_prime_over_a - 3.*(8.*fracnu*fracnu+50.*fracnu+275.)/20./(2.*fracnu+15.)*tau*om) * ppr->curvature_ini * s2_squared;
+	shear_ur = ktau_two/(45.+12.*fracnu + 22.5*gamma_int/a_prime_over_a) * (3.*s2_squared-1.) * (1.+(4.*fracnu-5.)/4./(2.*fracnu+15.)*tau*om) * ppr->curvature_ini;//TBC /s2_squared; /* shear of ultra-relativistic neutrinos/relics */  //TBC:0
+	//shear_ur = 0; 	
+          l3_ur = 0;  
+         
+//	  printf("tca");  
         }
         
          else {
-
+       
+        theta_ur = - k*ktau_three/36./(4.*fracnu+15.) * (4.*fracnu+11.+12.*s2_squared-3.*(8.*fracnu*fracnu+50.*fracnu+275.)/20./(2.*fracnu+15.)*tau*om) * ppr->curvature_ini * s2_squared;
         shear_ur = ktau_two/(45.+12.*fracnu) * (3.*s2_squared-1.) * (1.+(4.*fracnu-5.)/4./(2.*fracnu+15.)*tau*om) * ppr->curvature_ini;//TBC /s2_squared; /* shear of ultra-relativistic neutrinos/relics */  //TBC:0
+        l3_ur = ktau_three*2./7./(12.*fracnu+45.)* ppr->curvature_ini;//TBC
+      //  printf("fracnu: %e \n",fracnu );  	 
+	 }
 
+	 if(pba->shear_zero) {
+  //        shear_ur = 4./15.*(k*k*tau/3.+theta_ur)/gamma_int; 
+	    theta_ur = ppw->pv->y[ppw->pv->index_pt_theta_g];
+            shear_ur = 0; 	
+	 }
         if (pba->has_dr == _TRUE_) delta_dr = delta_ur;
-         }
+         
       }
       /* synchronous metric perturbation eta */
       //eta = ppr->curvature_ini * (1.-ktau_two/12./(15.+4.*fracnu)*(5.+4.*fracnu - (16.*fracnu*fracnu+280.*fracnu+325)/10./(2.*fracnu+15.)*tau*om)) /  s2_squared;
       //eta = ppr->curvature_ini * s2_squared * (1.-ktau_two/12./(15.+4.*fracnu)*(15.*s2_squared-10.+4.*s2_squared*fracnu - (16.*fracnu*fracnu+280.*fracnu+325)/10./(2.*fracnu+15.)*tau*om));
       eta = ppr->curvature_ini * (1.-ktau_two/12./(15.+4.*fracnu)*(5.+4.*s2_squared*fracnu - (16.*fracnu*fracnu+280.*fracnu+325)/10./(2.*fracnu+15.)*tau*om));
-
+      
+      
+      if (pba->use_tca_ic_eta ){
+       // eta = ppr->curvature_ini * (1.-ktau_two/12.);  
+     //  eta = 1.-1./36. *ktau_two* ((1.+8.*fracnu/(15.+  4.*fracnu + 7.5*gamma_int/a_prime_over_a)));
+        eta = ppr->curvature_ini * (1.-ktau_two/12./(15.+4.*fracnu + 7.5*gamma_int/a_prime_over_a)*(5.+4.*s2_squared*fracnu + 2.5*gamma_int/a_prime_over_a- (16.*fracnu*fracnu+280.*fracnu+325)/10./(2.*fracnu+15.)*tau*om));
+      
+	 if(pba->shear_zero) {
+           eta = ppr->curvature_ini * (1.-ktau_two/12.);  
+	 }
+      }
     }
 
     /* isocurvature initial conditions taken from Bucher, Moodely,
@@ -5445,7 +5469,6 @@ int perturb_initial_conditions(struct precision * ppr,
       shear_ur = ppr->entropy_ini/(4.*fracnu+15.)*k*tau*(1. + 3.*om*tau*fracnu/(4.*fracnu+15.)); /* small diff wrt camb */
 
       eta = ppr->entropy_ini*fracnu*k*tau*(-1./(4.*fracnu+5.) + (-3./64.*fracb/fracg+15./4./(4.*fracnu+15.)/(4.*fracnu+5.)*om*tau)); /* small diff wrt camb */
-
     }
 
     /** - (c) If the needed gauge is really the synchronous gauge, we need to affect the previously computed value of eta to the actual variable eta */
@@ -5494,7 +5517,7 @@ int perturb_initial_conditions(struct precision * ppr,
       velocity_tot = ((4./3.)*(fracg*ppw->pv->y[ppw->pv->index_pt_theta_g]+fracnu*theta_ur) + rho_m_over_rho_r*fracb*ppw->pv->y[ppw->pv->index_pt_theta_b])/(1.+rho_m_over_rho_r);
 
       alpha = (eta + 3./2.*a_prime_over_a*a_prime_over_a/k/k/s2_squared*(delta_tot + 3.*a_prime_over_a/k/k*velocity_tot))/a_prime_over_a;
-
+     // printf("alpha = %e ",alpha); 
       ppw->pv->y[ppw->pv->index_pt_phi] = eta - a_prime_over_a*alpha;
 
       ppw->pv->y[ppw->pv->index_pt_delta_g] -= 4.*a_prime_over_a*alpha;
@@ -6592,8 +6615,8 @@ int perturb_total_stress_energy(
         theta_ur = y[ppw->pv->index_pt_theta_ur];
         shear_ur = y[ppw->pv->index_pt_shear_ur];
         
-        if(gamma_int > ppr->tca_trigger*a_prime_over_a && gamma_int > ppr->tca_trigger*k) 
-          shear_ur = 2./15.*(2.*k2*ppw->pvecmetric[ppw->index_mt_alpha]+ 2.* y[ppw->pv->index_pt_theta_ur])/gamma_int;
+//        if(gamma_int > ppr->tca_trigger*a_prime_over_a && gamma_int > ppr->tca_trigger*k) 
+  //        shear_ur = 2./15.*(2.*k2*ppw->pvecmetric[ppw->index_mt_alpha]+ 2.* y[ppw->pv->index_pt_theta_ur])/gamma_int;
 
       }
 
@@ -8991,13 +9014,15 @@ int perturb_derivs(double tau,
           k2*(ppt->three_ceff2_ur*y[pv->index_pt_delta_ur]/4.-s2_squared*y[pv->index_pt_shear_ur]) + metric_euler
           // non-standard term, non-zero if ceff2_ur not 1/3
           -(1.-ppt->three_ceff2_ur)*a_prime_over_a*y[pv->index_pt_theta_ur];
-	
+/*	
 	if(gamma_int > ppr->tca_trigger*a_prime_over_a && gamma_int > ppr->tca_trigger*k ) {
 	
         dy[pv->index_pt_theta_ur] =
           k2*(ppt->three_ceff2_ur*y[pv->index_pt_delta_ur]/4.) + metric_euler;
 	
 	}
+
+*/
         if(ppw->approx[ppw->index_ap_ufa] == (int)ufa_off) {
 
           /** - -----> exact ur shear */
@@ -9039,8 +9064,8 @@ int perturb_derivs(double tau,
 	   }	 
 	
 	   if(gamma_int > ppr->tca_trigger*a_prime_over_a && gamma_int > ppr->tca_trigger*k ) {
-             for(l=2; l <= pv->l_max_ur; l++)
-                dy[pv->index_pt_delta_ur+l] = 0; 
+  //           for(l=2; l <= pv->l_max_ur; l++)
+//                dy[pv->index_pt_delta_ur+l] = pow(10,-10); 
 	   } 
 	
 	
