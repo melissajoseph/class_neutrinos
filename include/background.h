@@ -128,6 +128,7 @@ struct background
   double at_mid_idr; 
   double R_idr;
   int use_const_w;
+  int use_idr_cs2;
   double rescale_w_cs2; 
   double rescale_factor_cs2; 
   double rescale_factor_w; 

@@ -922,6 +922,7 @@ int input_read_parameters(
 
   if (flag1 == _TRUE_ && param1 == 1.) {
     class_read_double("cs2_idr", pba->cs2_idr);
+    pba->use_idr_cs2 = 1;
   }
   class_call(parser_read_double(pfc,"rescale_w_cs2",&param1,&flag1,errmsg),
              errmsg,

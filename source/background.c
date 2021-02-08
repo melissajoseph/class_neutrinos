@@ -594,6 +594,16 @@ int background_functions(
        pvecback[pba->index_bg_w_idr] = w1;
        pvecback[pba->index_bg_cs2_idr] = cs2_i;
      
+     if (pba->use_const_w == 1) {
+     //  pvecback[pba->index_bg_p_idr] = pba->w_idr *pvecback[pba->index_bg_rho_idr];
+       pvecback[pba->index_bg_w_idr] = pba->w_idr;
+    //   pvecback[pba->index_bg_cs2_idr] = pba->cs2_idr;
+     } 
+     if (pba->use_idr_cs2 == 1) {
+     //  pvecback[pba->index_bg_p_idr] = pba->w_idr *pvecback[pba->index_bg_rho_idr];
+//       pvecback[pba->index_bg_w_idr] = pba->w_idr;
+       pvecback[pba->index_bg_cs2_idr] = pba->cs2_idr;
+     } 
      //  if ((a_rel - pba->at)/a_rel < pow(10,-4)) 
 //	       printf("a = %e, x = %e , rho_x = %e, pressure_x = %e, w_idr = %e, cs2 = %e \n"
 //			       ,a_rel, x_mt,rho_x,pressure_x, w1 ,cs2_i); 
@@ -608,6 +618,11 @@ int background_functions(
      if (pba->use_const_w == 1) {
      //  pvecback[pba->index_bg_p_idr] = pba->w_idr *pvecback[pba->index_bg_rho_idr];
        pvecback[pba->index_bg_w_idr] = pba->w_idr;
+//       pvecback[pba->index_bg_cs2_idr] = pba->cs2_idr;
+     } 
+     if (pba->use_idr_cs2 == 1) {
+     //  pvecback[pba->index_bg_p_idr] = pba->w_idr *pvecback[pba->index_bg_rho_idr];
+//       pvecback[pba->index_bg_w_idr] = pba->w_idr;
        pvecback[pba->index_bg_cs2_idr] = pba->cs2_idr;
      } 
      else if (pba->rescale_w_cs2 == 1 ){
